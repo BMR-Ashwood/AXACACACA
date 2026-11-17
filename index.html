@@ -64,18 +64,17 @@
 
 <script>
 (function(){
-  // === БАЗА ПЕРСОНАЖЕЙ (только описание и стартовые фразы, без заготовленных ответов) ===
   const characters = {
     "Джеффри": {
-      desc: "Молодой, неуверенный сотрудник Бюро. Пишет диплом о бюрократии. Любит кошку Чонди. Говорит вежливо, называет директора 'Мистер Морриган'.",
+      desc: "Молодой, неуверенный сотрудник Бюро. Пишет диплом о бюрократии. Любит кошку Чонди. Говорит вежливо.",
       lines: ["Мистер Морриган, я закончил черновик диплома...", "Мистер Морриган, я хотел уточнить по поводу кошки Чонди...", "Мистер Морриган, а можно мне лицензию второй категории?"]
     },
     "Бернадетт": {
-      desc: "Странная сотрудница. Теряет ложки, находит трупы. Обожает паука-фамильяра Бусинку. Говорит с лёгким безумием в голосе.",
+      desc: "Странная сотрудница. Теряет ложки, находит трупы. Обожает паука-фамильяра Бусинку. Говорит с безуминкой.",
       lines: ["Мистер Морриган, у нас опять пропали ложки...", "Мистер Морриган, чайная ложка в столовой... она смотрит...", "Мистер Морриган, Бусинка сплёл паутину над сейфом..."]
     },
     "Альфред": {
-      desc: "Старший инспектор. Зануда, строго следует регламенту. Переживает о лицензиях, проверках и темных практиках в бараках.",
+      desc: "Старший инспектор. Зануда, строго следует регламенту. Переживает о лицензиях и темных практиках.",
       lines: ["Мистер Морриган, никто не выехал на адрес мага с 4-й лицензией...", "Мистер Морриган, сигнал о тёмных практиках в бараках...", "Мистер Морриган, бумаги по протоколу «Гармония» не подписаны..."]
     },
     "Эвелин": {
@@ -120,8 +119,8 @@
   let currentSpankCount = 0;
   let busy = false;
   let lastTwo = [];
+  let chatHistory = []; // Хранилище диалога для ИИ
 
-  // === ЗВУКИ ===
   let audioCtx;
   function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
   function playSound(type) {
@@ -148,89 +147,159 @@
     busy = false; currentSpankCount = 0;
     let avail = names.filter(n => !lastTwo.includes(n)); if (!avail.length) avail = names;
     currentName = getRandom(avail); lastTwo.push(currentName); if (lastTwo.length > 2) lastTwo.shift();
-    const d = characters[currentName]; currentLine = getRandom(d.lines);
+    
+    const d = characters[currentName]; 
+    currentLine = getRandom(d.lines);
+    
+    // Инициализируем историю диалога с изначальной фразы персонажа
+    chatHistory = [{ role: 'assistant', content: currentLine }];
+
     visitorEl.classList.remove('hidden'); faceTextEl.textContent = getFace(currentName);
     speakerEl.textContent = currentName; lineEl.textContent = '«' + currentLine + '»'; lineEl.scrollTop = 0;
     if (d.isEvelyn) addCoffeeCup();
-    renderChoices();
+    
+    renderChoices(false);
   }
   function hideDummy() { visitorEl.classList.add('hidden'); }
 
-  function renderChoices() {
+  // Функция рендера кнопок. Если inDialogue = true, появляется кнопка "Ответить ещё"
+  function renderChoices(inDialogue = false) {
     choicesEl.innerHTML = ''; customRow.classList.remove('active'); customInput.value = '';
-    [{t:'Выслушать (молча)',a:'listen'},{t:'Дать под сраку',a:'spank'},{t:'Выгнать из кабинета',a:'fire'},{t:'Сказать своё...',a:'custom'}].forEach(o => {
-      const b = document.createElement('button'); b.textContent = o.t; b.onclick = () => handleAction(o.a); choicesEl.appendChild(b);
+    
+    const opts = [];
+    if (inDialogue) {
+      opts.push({ t: 'Ответить ещё...', a: 'custom' });
+    } else {
+      opts.push({ t: 'Сказать своё...', a: 'custom' });
+    }
+    opts.push({ t: 'Дать под сраку', a: 'spank' });
+    opts.push({ t: 'Выгнать из кабинета', a: 'fire' });
+    
+    if (inDialogue) {
+      opts.push({ t: 'Закончить разговор', a: 'leave' });
+    } else {
+      opts.push({ t: 'Выслушать (молча)', a: 'listen' });
+    }
+
+    opts.forEach(o => {
+      const b = document.createElement('button'); b.textContent = o.t; 
+      b.onclick = () => handleAction(o.a); 
+      choicesEl.appendChild(b);
     });
   }
 
   function handleAction(action) {
     if (busy || !currentName) return; initAudio();
     if (action === 'custom') { playSound('click'); customRow.classList.add('active'); customInput.focus(); return; }
-    const d = characters[currentName]; choicesEl.innerHTML = '';
-    if (action === 'listen') {
+    
+    const d = characters[currentName]; 
+    choicesEl.innerHTML = '';
+
+    if (action === 'listen' || action === 'leave') {
       busy = true; playSound('sad');
-      lineEl.textContent = d.isVisitor ? currentName + ' разворачивается и уходит...' : 'Вы молча киваете. Сотрудник уходит...';
-      speakerEl.textContent = ''; setTimeout(nextVisitor, 3000);
-    } else if (action === 'spank') {
+      lineEl.textContent = d.isVisitor ? currentName + ' разворачивается и уходит.' : 'Вы отпускаете сотрудника. Он уходит.';
+      speakerEl.textContent = ''; setTimeout(nextVisitor, 2000);
+    } 
+    else if (action === 'spank') {
       playSound('spank'); currentSpankCount++; visitorEl.classList.add('spank-anim');
+      
       if (d.isDima) {
-        busy = false; speakerEl.textContent = 'ДИМА'; lineEl.textContent = '— Дима: «Слышь, ты чё, долбанулся? Иди нахуй».';
-        setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(); }, 800);
-      } else if (currentSpankCount < 3) {
-        busy = false; speakerEl.textContent = currentName; lineEl.textContent = '— ' + currentName + ' ойкает. «Мистер Морриган, это же насилие!»';
-        setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(); }, 800);
-      } else {
-        busy = true; speakerEl.textContent = ''; lineEl.textContent = 'Вы дали ' + currentName + ' под сраку в третий раз. ' + currentName + ' убегает.';
+        busy = false; speakerEl.textContent = 'ДИМА'; 
+        lineEl.textContent = '— Дима: «Слышь, ты чё, долбанулся? Иди нахуй».';
+        // Добавляем в историю, чтобы ИИ знал о шлепке
+        chatHistory.push({ role: 'assistant', content: 'Слышь, ты чё, долбанулся? Иди нахуй.' });
+        setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(true); }, 800);
+      } 
+      else if (currentSpankCount < 3) {
+        busy = false; speakerEl.textContent = currentName;
+        const spankReply = 'ойкает. «Мистер Морриган, это же насилие!»';
+        lineEl.textContent = '— ' + currentName + ' ' + spankReply;
+        chatHistory.push({ role: 'assistant', content: spankReply });
+        setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(true); }, 800);
+      } 
+      else {
+        busy = true; speakerEl.textContent = '';
+        lineEl.textContent = 'Вы дали ' + currentName + ' под сраку в третий раз. ' + currentName + ' убегает.';
         setTimeout(() => { visitorEl.classList.remove('spank-anim'); nextVisitor(); }, 3500);
       }
-    } else if (action === 'fire') {
-      if (d.isDima) { playSound('angry'); lineEl.textContent = 'Вы попытались выгнать Диму. В ответ он вам набил ебало. Вы ахуели. Дима ушёл сам.'; speakerEl.textContent = ''; busy = true; setTimeout(() => nextVisitor(), 4000); }
-      else { playSound('click'); busy = true; speakerEl.textContent = ''; lineEl.textContent = 'Вы указываете ' + currentName + ' на дверь. Дверь хлопает.'; setTimeout(nextVisitor, 3000); }
+    } 
+    else if (action === 'fire') {
+      if (d.isDima) {
+        playSound('angry'); lineEl.textContent = 'Вы попытались выгнать Диму. В ответ он вам набил ебало. Вы ахуели. Дима ушёл сам.';
+        speakerEl.textContent = ''; busy = true; setTimeout(() => nextVisitor(), 4000); 
+      } else {
+        playSound('click'); busy = true; speakerEl.textContent = '';
+        lineEl.textContent = 'Вы указываете ' + currentName + ' на дверь. Дверь хлопает.';
+        setTimeout(nextVisitor, 3000);
+      }
     }
   }
 
-  // === ГЕНЕРАЦИЯ ЧЕРЕЗ POLLINATIONS AI API ===
-  window.sendCustom = function() {
+  // === ГЕНЕРАЦИЯ ИИ (С ИСТОРИЕЙ ДИАЛОГА) ===
+  window.sendCustom = async function() {
     if (busy || !currentName) return;
     const text = customInput.value.trim(); if (!text) return;
+    
     initAudio(); playSound('click'); busy = true; customRow.classList.remove('active'); choicesEl.innerHTML = '';
-    lineEl.innerHTML = '— Вы: «' + text + '»<br><br><span class="typing">Персонаж думает</span>'; speakerEl.textContent = '';
+    lineEl.innerHTML = '— Вы: «' + text + '»<br><br><span class="typing">Собеседник думает</span>'; speakerEl.textContent = '';
+
+    // Добавляем твою реплику в историю
+    chatHistory.push({ role: 'user', content: text });
 
     const charData = characters[currentName];
     
-    // Формируем промпт для LLM
-    const systemPrompt = encodeURIComponent(
-      `Ты играешь роль персонажа ${currentName} в текстовом квесте. Сеттинг: 1922 год, США, Огайо, Бюро Магического Регулирования. Твой персонаж: ${charData.desc}. Ты только что сказал: "${currentLine}". Директор (игрок) сказал тебе: "${text}". Напиши ответ от лица персонажа. Ответ должен быть коротким (до 25 слов), живым, в характере. Если игрок тебя оскорбляет (мат, 'нахуй', 'долбоёб'), реагируй остро: обижайся, груби в ответ или пугайся, в зависимости от характера. Не используй кавычки, просто напиши текст.`
-    );
+    // Системный промпт для жесткого удержания роли
+    const systemPrompt = `Ты персонаж ${currentName}. Твой характер: ${charData.desc}. Сеттинг: 1922 год, Огайо, Бюро Магического Регулирования. Ты ведешь диалог с директором Бюро (Мистером Морриганом). Отвечай коротко (до 25 слов), в характере. Если тебя оскорбляют или бьют, реагируй соответственно своему характеру. Не пиши от третьего лица. Пиши только то, что говорит персонаж.`;
 
-    // Запрос к Pollinations (GET, без ключа, CORS открыт)
-    fetch('https://text.pollinations.ai/' + systemPrompt + '?model=openai')
-      .then(res => {
-        if (!res.ok) throw new Error('API error');
-        return res.text();
-      })
-      .then(aiResponse => {
-        // Очищаем возможные лишние кавычки
-        let clean = aiResponse.trim().replace(/^["'«]|["'»]$/g, '');
-        const lowerText = text.toLowerCase();
-        if (lowerText.includes('нахуй') || lowerText.includes('долбо')) playSound('angry'); else playSound('sad');
-        lineEl.textContent = '— ' + clean;
-        setTimeout(nextVisitor, 4000);
-      })
-      .catch(err => {
-        // Запасной вариант, если API не ответил
-        playSound('sad');
-        const fallbacks = [
-          `— ${currentName} хлопает глазами, не в силах подобрать слова.`,
-          `— ${currentName} кашляет в кулак: «Э-э... я не совсем понял, мистер Морриган».`,
-          `— ${currentName} неуверенно кивает, но в глазах пустота.`
-        ];
-        lineEl.textContent = getRandom(fallbacks);
-        setTimeout(nextVisitor, 3000);
+    try {
+      const res = await fetch('https://text.pollinations.ai/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...chatHistory
+          ],
+          model: 'openai'
+        })
       });
+
+      if (!res.ok) throw new Error('API error');
+      
+      let aiReply = await res.text();
+      aiReply = aiReply.trim().replace(/^["'«]|["'»]$/g, ''); // Чистим кавычки
+
+      // Записываем ответ ИИ в историю
+      chatHistory.push({ role: 'assistant', content: aiReply });
+
+      const lowerText = text.toLowerCase();
+      if (lowerText.includes('нахуй') || lowerText.includes('долбо')) playSound('angry'); else playSound('sad');
+      
+      speakerEl.textContent = currentName;
+      lineEl.textContent = '— ' + aiReply;
+      
+      busy = false;
+      renderChoices(true); // Возвращаем кнопки для продолжения диалога
+      
+    } catch (err) {
+      console.error(err);
+      playSound('sad');
+      lineEl.textContent = '— ' + currentName + ' молчит, глядя на вас с недоумением. (Ошибка связи с ИИ)';
+      speakerEl.textContent = currentName;
+      
+      // Убираем последнюю реплику из истории, чтобы не засорять контекст, если была ошибка
+      chatHistory.pop(); 
+      
+      busy = false;
+      renderChoices(true); 
+    }
   };
 
-  function nextVisitor() { hideDummy(); setTimeout(spawnDummy, 800); }
+  function nextVisitor() { 
+    hideDummy(); 
+    setTimeout(spawnDummy, 800); 
+  }
+  
   setTimeout(spawnDummy, 500);
 })();
 </script>
