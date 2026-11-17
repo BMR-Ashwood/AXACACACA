@@ -254,13 +254,25 @@
     return getRandom(faces[name] || [":0"]);
   }
   
+  // === ИЗМЕНЕННАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ КОФЕ ===
   function addCoffeeCup() {
-    if (document.querySelectorAll('.coffee-cup').length > 40) return;
+    // Увеличил лимит до 50, чтобы можно было завалить весь стол
+    if (document.querySelectorAll('.coffee-cup').length > 50) return;
     const c = document.createElement('div'); 
     c.className='coffee-cup'; 
-    c.style.left=(5+Math.random()*30)+'%'; 
-    c.style.bottom=(20+Math.random()*10)+'%'; 
-    c.style.transform=`rotate(${Math.random()*20-10}deg)`; 
+    
+    // Позиционируем по всей ширине стола (от 5% до 90%), а не только слева
+    c.style.left = (5 + Math.random() * 85) + '%'; 
+    
+    // Разбрасываем по высоте стола (от 5% до 25% от низа экрана)
+    c.style.bottom = (5 + Math.random() * 20) + '%'; 
+    
+    // Добавляем случайный поворот
+    c.style.transform = `rotate(${Math.random()*40-20}deg)`; 
+    
+    // Небольшая задержка анимации, чтобы они падали не одновременно
+    c.style.animationDelay = (Math.random() * 0.3) + 's';
+    
     roomEl.appendChild(c);
   }
 
@@ -274,7 +286,7 @@
     
     visitorEl.classList.remove('hidden'); faceTextEl.textContent = getFace(currentName);
     speakerEl.textContent = currentName; lineEl.textContent = '«' + currentLine + '»'; lineEl.scrollTop = 0;
-    if (d.isEvelyn) addCoffeeCup();
+    if (currentName === "Эвелин") addCoffeeCup();
     
     renderChoices(false);
   }
