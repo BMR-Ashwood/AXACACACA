@@ -5,188 +5,129 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Кабинет Мистера Морригана</title>
 <style>
-  :root {
-    --bg-light: #f4efe6;
-    --wood: #d4b58e;
-    --wood-dark: #b8936a;
-    --text-main: #333;
-    --text-muted: #666;
-    --accent: #5a7d9a;
-    --btn-bg: #fff;
-    --btn-border: #ccc;
-    --btn-hover: #f0f0f0;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+  
   body {
-    background-color: var(--bg-light);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    color: var(--text-main);
-    min-height: 100vh;
+    background-color: #f0f0f0; /* Светлый фон */
+    height: 100vh;
     display: flex;
     justify-content: center;
     overflow: hidden;
-    user-select: none;
   }
-  
-  #game-container {
-    width: 100vw;
+
+  #game {
+    width: 100%;
     max-width: 500px;
-    height: 100vh;
-    position: relative;
-    background: linear-gradient(180deg, #e8dfd0 0%, #f4efe6 100%);
+    height: 100%;
     display: flex;
     flex-direction: column;
+    background-color: #e8e0d5; /* Светлая стена */
+    position: relative;
+  }
+
+  /* Верхняя часть - комната */
+  #room {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
     overflow: hidden;
+    padding-bottom: 20px;
   }
 
-  /* Задний фон - стена */
-  .wall {
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 70%;
-    background: #e8dfd0;
-    z-index: 0;
-  }
-
-  /* Стол */
-  #desk {
+  /* Стол на фоне */
+  #desk-bg {
     position: absolute;
     bottom: 0; left: 0; right: 0;
     height: 35%;
-    background: linear-gradient(180deg, var(--wood) 0%, var(--wood-dark) 100%);
-    border-top: 6px solid #a67c52;
-    box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+    background-color: #c9a87c; /* Светлое дерево */
+    border-top: 4px solid #b8936a;
     z-index: 1;
   }
-  
-  /* Бумаги на столе */
+
+  /* Бумаги */
   .paper {
     position: absolute;
     background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 2px;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
-    transform: rotate(var(--r));
+    border: 1px solid #ccc;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
   }
-  .p1 { width: 60px; height: 80px; left: 10%; bottom: 10%; --r: -5deg; }
-  .p2 { width: 50px; height: 70px; left: 25%; bottom: 15%; --r: 8deg; }
-  .p3 { width: 70px; height: 50px; right: 15%; bottom: 8%; --r: 4deg; }
+  .p1 { width: 50px; height: 70px; left: 10%; bottom: 5%; transform: rotate(-5deg); z-index: 2; }
+  .p2 { width: 60px; height: 40px; right: 10%; bottom: 10%; transform: rotate(8deg); z-index: 2; }
 
-  /* Персонаж */
+  /* СЕРЫЙ БЕЗЛИКИЙ МАНЕКЕН */
   #visitor {
-    position: absolute;
-    bottom: 30%; 
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
+    z-index: 3;
     display: flex;
     flex-direction: column;
     align-items: center;
-    z-index: 2;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.3s ease;
   }
   
-  #visitor.away {
+  #visitor.hidden {
     opacity: 0;
-    transform: translateX(-50%) translateY(50px) scale(0.9);
+    transform: translateY(20px);
   }
 
-  /* Анимация шлепка */
-  @keyframes spankAnim {
-    0% { transform: translateX(-50%) translateY(0) rotate(0); }
-    25% { transform: translateX(-50%) translateY(0) rotate(15deg) scale(1.05); }
-    50% { transform: translateX(-50%) translateY(0) rotate(-15deg) scale(1.05); }
-    75% { transform: translateX(-50%) translateY(0) rotate(10deg); }
-    100% { transform: translateX(-50%) translateY(0) rotate(0); }
-  }
-  .spanked {
-    animation: spankAnim 0.4s ease-in-out;
-  }
-
-  /* Визуал манекена */
-  .dummy {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: transform 0.3s;
-  }
-
-  .head {
+  .dummy-head {
     width: 80px;
-    height: 85px;
-    background: #fdfaf6;
+    height: 100px;
+    background-color: #a0a0a0; /* Серый */
     border-radius: 40px 40px 30px 30px;
-    position: relative;
-    box-shadow: inset -5px -5px 10px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.1);
-    border: 1px solid #e0d5c1;
+    box-shadow: inset -5px -5px 10px rgba(0,0,0,0.1);
+    margin-bottom: -5px;
   }
 
-  /* Прически/детали */
-  .hair-jeffrey { position: absolute; top: -5px; left: 10px; width: 60px; height: 30px; background: #b58b5d; border-radius: 30px 30px 0 0; }
-  .hair-bernadett { position: absolute; top: -5px; left: 0; width: 80px; height: 50px; background: #7a5a48; border-radius: 40px 40px 10px 10px; z-index: -1; }
-  .hair-alfred { position: absolute; top: -2px; left: 15px; width: 50px; height: 20px; background: #d9d9d9; border-radius: 20px 20px 0 0; }
-  .hair-evelyn { position: absolute; top: -10px; left: 20px; width: 40px; height: 40px; background: #f2d16b; border-radius: 50%; z-index: -1; box-shadow: 15px 5px 0 -5px #f2d16b; }
-  .hair-vanya { position: absolute; top: -5px; left: 5px; width: 70px; height: 30px; background: #333; border-radius: 40px 40px 0 0; }
-  .hair-netz { position: absolute; top: 0px; left: 20px; width: 40px; height: 15px; background: #999; border-radius: 10px; }
-  .hair-vladimir { position: absolute; top: 0px; left: 10px; width: 60px; height: 40px; background: #4a4a4a; border-radius: 40px 40px 20px 20px; }
-
-  .eye {
-    position: absolute; top: 35px; width: 10px; height: 10px;
-    background: #333; border-radius: 50%;
-  }
-  .eye.l { left: 20px; }
-  .eye.r { right: 20px; }
-  
-  .mouth {
-    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-    width: 20px; height: 4px; background: #666; border-radius: 2px;
-  }
-  .mouth.sad { border-radius: 0 0 10px 10px; height: 6px; background: transparent; border-bottom: 2px solid #666; }
-  .mouth.happy { border-radius: 10px 10px 0 0; height: 6px; background: transparent; border-top: 2px solid #666; }
-
-  .body {
-    width: 110px; height: 120px;
-    margin-top: -10px;
-    border-radius: 20px 20px 10px 10px;
-    box-shadow: inset -5px -5px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.1);
-    position: relative;
-  }
-  /* Галстук/воротник */
-  .body::after {
-    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 20px; height: 40px; background: rgba(0,0,0,0.1);
-    clip-path: polygon(0 0, 100% 0, 50% 100%);
+  .dummy-body {
+    width: 130px;
+    height: 120px;
+    background-color: #888888; /* Темно-серый */
+    border-radius: 20px 20px 0 0;
+    box-shadow: inset -5px -5px 15px rgba(0,0,0,0.1);
   }
 
-  /* Интерфейс */
+  /* Эффекты */
+  .spank-anim {
+    animation: shake 0.4s;
+  }
+  @keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-10px) rotate(-5deg); }
+    50% { transform: translateX(10px) rotate(5deg); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+  }
+
+  /* Нижняя часть - интерфейс */
   #ui {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
+    background-color: #ffffff;
+    border-top: 2px solid #ccc;
     padding: 15px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(5px);
-    border-top: 1px solid #e0d5c1;
-    box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
-    z-index: 10;
-    max-height: 55%;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+    z-index: 10;
   }
 
   #speaker {
     font-size: 12px;
     font-weight: bold;
+    color: #d32f2f;
     text-transform: uppercase;
-    color: var(--accent);
     margin-bottom: 5px;
     letter-spacing: 1px;
   }
 
   #line {
-    font-size: 15px;
+    font-size: 16px;
+    color: #000; /* Черный текст */
     line-height: 1.4;
-    color: var(--text-main);
     margin-bottom: 15px;
-    flex-grow: 1;
+    min-height: 60px;
+    max-height: 120px;
     overflow-y: auto;
   }
 
@@ -197,83 +138,56 @@
   }
 
   button {
-    background: var(--btn-bg);
-    border: 1px solid var(--btn-border);
-    color: var(--text-main);
-    padding: 12px 15px;
-    font-size: 15px;
-    font-weight: 500;
+    background-color: #f9f9f9;
+    border: 2px solid #ccc;
+    color: #333;
+    padding: 12px;
+    font-size: 16px;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.1s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    text-align: center;
+    font-weight: bold;
+    transition: background 0.1s;
   }
 
   button:active {
-    background: var(--btn-hover);
-    transform: scale(0.98);
+    background-color: #e0e0e0;
   }
 
-  #customRow {
-    display: flex;
+  #custom-row {
+    display: none;
     gap: 8px;
     margin-top: 8px;
   }
-  #customRow.hidden { display: none; }
-  
-  input[type="text"] {
+  #custom-row.active { display: flex; }
+
+  input {
     flex: 1;
-    padding: 12px;
-    border: 1px solid var(--btn-border);
+    padding: 10px;
+    border: 2px solid #ccc;
     border-radius: 8px;
-    font-size: 15px;
-    outline: none;
-  }
-  input[type="text"]:focus {
-    border-color: var(--accent);
+    font-size: 16px;
   }
 
-  /* Всплывающие эффекты */
-  .effect {
-    position: absolute;
-    font-size: 30px;
-    pointer-events: none;
-    animation: floatUp 0.8s ease-out forwards;
-    z-index: 20;
-  }
-  @keyframes floatUp {
-    0% { opacity: 1; transform: translateY(0) scale(1); }
-    100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+  #send-btn {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 0 20px;
   }
 
-  /* Вспышка */
-  .flash {
-    position: absolute; top:0; left:0; right:0; bottom:0;
-    background: #fff; opacity: 0; pointer-events: none; z-index: 15;
-  }
-  @keyframes flashAnim { 0% { opacity: 0.6; } 100% { opacity: 0; } }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-  <div class="wall"></div>
-  <div id="desk">
+<div id="game">
+  <div id="room">
+    <div id="desk-bg"></div>
     <div class="paper p1"></div>
     <div class="paper p2"></div>
-    <div class="paper p3"></div>
-  </div>
-
-  <div id="visitor" class="away">
-    <div class="dummy" id="dummyModel">
-      <div class="head" id="dummyHead">
-        <div class="hair-jeffrey" id="dummyHair" style="display:none;"></div>
-        <div class="eye l"></div>
-        <div class="eye r"></div>
-        <div class="mouth" id="dummyMouth"></div>
-      </div>
-      <div class="body" id="dummyBody"></div>
+    
+    <div id="visitor" class="hidden">
+      <div class="dummy-head"></div>
+      <div class="dummy-body"></div>
     </div>
   </div>
 
@@ -281,309 +195,212 @@
     <div id="speaker"></div>
     <div id="line"></div>
     <div id="choices"></div>
-    <div id="customRow" class="hidden">
-      <input type="text" id="customInput" placeholder="Что скажете?" autocomplete="off">
-      <button id="customSend" style="padding: 0 20px;">➤</button>
+    <div id="custom-row">
+      <input type="text" id="custom-input" placeholder="Что сказать?" autocomplete="off">
+      <button id="send-btn" onclick="sendCustom()">➤</button>
     </div>
   </div>
-  <div class="flash" id="flashEffect"></div>
 </div>
 
 <script>
 (function(){
-  // Звуковой движок (Web Audio API)
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  
-  function playSound(type) {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    
-    const now = audioCtx.currentTime;
-    
-    if (type === 'click') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(400, now);
-      osc.frequency.exponentialRampToValueAtTime(600, now + 0.05);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-      osc.start(now); osc.stop(now + 0.1);
-    } else if (type === 'spank') {
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(150, now);
-      osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-      osc.start(now); osc.stop(now + 0.2);
-    } else if (type === 'fire') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(300, now);
-      osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.linearRampToValueAtTime(0, now + 0.3);
-      osc.start(now); osc.stop(now + 0.3);
-    }
-  }
-
+  // БАЗА ПЕРСОНАЖЕЙ
   const characters = {
-    "Джеффри": {
-      color: '#7b9e89', // Мятный пиджак
-      hairClass: 'hair-jeffrey',
-      sad: false,
-      lines: [
-        "Мистер Морриган, я закончил черновик диплома. Тема — «Влияние бюрократии на внутреннюю свободу». Проблема в том, что я не уверен, что это диплом, а не жалоба. Могу я оставить как есть?",
-        "Мистер Морриган, я хотел уточнить по поводу кошки. Чонди. Она уже три дня не выходит из-под шкафа. Я думаю, это связано с тем, что я переставил шкаф. Стоит ли мне вернуть его на место?",
-        "Мистер Морриган, у меня вопрос по регламенту. Если сотрудник отсутствует на рабочем месте, но при этом присутствует — как это оформлять? У нас так делает половина отдела."
-      ]
-    },
-    "Бернадетт": {
-      color: '#e6a8d7', // Розовая кофта
-      hairClass: 'hair-bernadett',
-      sad: false,
-      lines: [
-        "Мистер Морриган, у нас пропали ложки. Не все. Только четырнадцать. Я пересчитала. Было двадцать шесть, стало двенадцать. Я не знаю, куда они делись, но я почти уверена, что это кто-то из наших.",
-        "Мистер Морриган, я нашла ложку в кофемашине. А ещё одну — в архиве. А ещё там был труп. Ну, может, не труп, но пахло очень похоже.",
-        "Мистер Морриган, вы не замечали, что чайная ложка в столовой немного... другая? Как будто она смотрит. Я про ложку. Она смотрит."
-      ]
-    },
-    "Альфред": {
-      color: '#8a9fb5', // Серо-синий
-      hairClass: 'hair-alfred',
-      sad: false,
-      lines: [
-        "Мистер Морриган, у нас квартальный отчёт по третьему отделу. Цифры не сходятся на четыре процента. Что мне писать? Что мы ошиблись, или что ошиблись они?",
-        "Мистер Морриган, по поводу отчёта за март. Я не уверен, что подписывать его — законно. Но я подпишу, если вы скажете.",
-        "Мистер Морриган, могу я закрыть отчёт за апрель без вашей подписи? Просто вы в отпуске были. Ну, как бы были. На бумаге."
-      ]
-    },
-    "Эвелин": {
-      color: '#f2d16b', // Желтая блузка
-      hairClass: 'hair-evelyn',
-      sad: false,
-      lines: [
-        "Мистер Морриган, я вам кофе. Очень сладкий. Тридцать ложек сахара. Я не считала, но мне кажется, тридцать. Может, тридцать одна. Оно почти не шевелится.",
-        "Мистер Морриган, ваш кофе. Я добавила сахар. Много. Очень много. Оно теперь не совсем напиток. Скорее, десерт. Или сироп. Или... сахар с кофе.",
-        "Мистер Морриган, кофе. Я попробовала его сама, и у меня слиплись зубы. Но вам, я думаю, понравится. Оно очень сладкое. Очень-очень."
-      ]
-    },
-    "Ваня": {
-      color: '#555', // Темная рубашка
-      hairClass: 'hair-vanya',
-      sad: false,
-      lines: [
-        "Мистер Морриган, а скажите честно. Я ведь не гей? Просто я об этом думаю уже третий месяц. И я не понимаю, к чему я прихожу.",
-        "Мистер Морриган, а вот если человек не гей, но ему нравится, как звучит слово «эспрессо» — это нормально?",
-        "Мистер Морриган, а можно я не буду отвечать на вопрос о своей ориентации в анкете? Там просто такой вопрос странный. «Уточните». Что уточнить?"
-      ]
-    },
-    "Нетц": {
-      color: '#d1a17b', // Бежевая рубашка
-      hairClass: 'hair-netz',
-      sad: false,
-      lines: [
-        "Мистер Морриган, у нас по отчёту за второй квартал вопрос. В графе «прочее» у нас сумма 12 000. Что там за прочее? Я не помню, чтобы мы тратили на прочее.",
-        "Мистер Морриган, по поводу отчёта. Я нашёл ошибку. В строке 47. Там написано «нет данных». Это ошибка или это данные?",
-        "Мистер Морриган, если я сдаю отчёт, а его никто не читает — он считается сданным? Или считается нет?"
-      ]
-    },
-    "Владимир": {
-      color: '#666', // Темно-серый, потертый
-      hairClass: 'hair-vladimir',
-      sad: true,
-      lines: [
-        "Мистер Морриган... я... я не хочу жаловаться, но я опять без денег. Совсем. Я даже не знаю, на что я буду есть сегодня. Я не прошу, я просто говорю. Я нищий, мистер Морриган. Я нищий.",
-        "Мистер Морриган, у меня опять не хватает на проезд. Я шёл пешком. Два часа. Я не жалуюсь. Просто я нищий. Вот и всё.",
-        "Мистер Морриган... я не знаю, как это сказать. Мне не хватает на еду. Я не прошу. Я просто говорю, что я нищий. Потому что я нищий. Вот."
-      ]
-    }
+    "Джеффри": [
+      "Мистер Морриган, я закончил черновик диплома. Тема — «Влияние бюрократии на внутреннюю свободу». Проблема в том, что я не уверен, что это диплом, а не жалоба. Могу я оставить как есть?",
+      "Мистер Морриган, я хотел уточнить по поводу кошки. Чонди. Она уже три дня не выходит из-под шкафа. Я думаю, это связано с тем, что я переставил шкаф. Стоит ли мне вернуть его на место?",
+      "Мистер Морриган, у меня вопрос по регламенту. Если сотрудник отсутствует на рабочем месте, но при этом присутствует — как это оформлять? У нас так делает половина отдела."
+    ],
+    "Бернадетт": [
+      "Мистер Морриган, у нас пропали ложки. Не все. Только четырнадцать. Я пересчитала. Было двадцать шесть, стало двенадцать. Я не знаю, куда они делись, но я почти уверена, что это кто-то из наших.",
+      "Мистер Морриган, я нашла ложку в кофемашине. А ещё одну — в архиве. А ещё там был труп. Ну, может, не труп, но пахло очень похоже.",
+      "Мистер Морриган, вы не замечали, что чайная ложка в столовой немного... другая? Как будто она смотрит. Я про ложку. Она смотрит."
+    ],
+    "Альфред": [
+      "Мистер Морриган, у нас квартальный отчёт по третьему отделу. Цифры не сходятся на четыре процента. Что мне писать? Что мы ошиблись, или что ошиблись они?",
+      "Мистер Морриган, по поводу отчёта за март. Я не уверен, что подписывать его — законно. Но я подпишу, если вы скажете.",
+      "Мистер Морриган, могу я закрыть отчёт за апрель без вашей подписи? Просто вы в отпуске были. Ну, как бы были. На бумаге."
+    ],
+    "Эвелин": [
+      "Мистер Морриган, я вам кофе. Очень сладкий. Тридцать ложек сахара. Я не считала, но мне кажется, тридцать. Может, тридцать одна. Оно почти не шевелится.",
+      "Мистер Морриган, ваш кофе. Я добавила сахар. Много. Очень много. Оно теперь не совсем напиток. Скорее, десерт. Или сироп. Или... сахар с кофе.",
+      "Мистер Морриган, кофе. Я попробовала его сама, и у меня слиплись зубы. Но вам, я думаю, понравится. Оно очень сладкое. Очень-очень."
+    ],
+    "Ваня": [
+      "Мистер Морриган, а скажите честно. Я ведь не гей? Просто я об этом думаю уже третий месяц. И я не понимаю, к чему я прихожу.",
+      "Мистер Морриган, а вот если человек не гей, но ему нравится, как звучит слово «эспрессо» — это нормально?",
+      "Мистер Морриган, а можно я не буду отвечать на вопрос о своей ориентации в анкете? Там просто такой вопрос странный. «Уточните». Что уточнить?"
+    ],
+    "Нетц": [
+      "Мистер Морриган, у нас по отчёту за второй квартал вопрос. В графе «прочее» у нас сумма 12 000. Что там за прочее? Я не помню, чтобы мы тратили на прочее.",
+      "Мистер Морриган, по поводу отчёта. Я нашёл ошибку. В строке 47. Там написано «нет данных». Это ошибка или это данные?",
+      "Мистер Морриган, если я сдаю отчёт, а его никто не читает — он считается сданным? Или считается нет?"
+    ],
+    "Владимир": [
+      "Мистер Морриган... я... я не хочу жаловаться, но я опять без денег. Совсем. Я даже не знаю, на что я буду есть сегодня. Я не прошу, я просто говорю. Я нищий, мистер Морриган. Я нищий.",
+      "Мистер Морриган, у меня опять не хватает на проезд. Я шёл пешком. Два часа. Я не жалуюсь. Просто я нищий. Вот и всё.",
+      "Мистер Морриган... я не знаю, как это сказать. Мне не хватает на еду. Я не прошу. Я просто говорю, что я нищий. Потому что я нищий. Вот."
+    ]
   };
 
   const names = Object.keys(characters);
+  
+  // ЭЛЕМЕНТЫ DOM
   const visitorEl = document.getElementById('visitor');
-  const dummyHead = document.getElementById('dummyHead');
-  const dummyHair = document.getElementById('dummyHair');
-  const dummyMouth = document.getElementById('dummyMouth');
-  const dummyBody = document.getElementById('dummyBody');
   const speakerEl = document.getElementById('speaker');
   const lineEl = document.getElementById('line');
   const choicesEl = document.getElementById('choices');
-  const customRow = document.getElementById('customRow');
-  const customInput = document.getElementById('customInput');
-  const customSend = document.getElementById('customSend');
-  const flashEffect = document.getElementById('flashEffect');
+  const customRow = document.getElementById('custom-row');
+  const customInput = document.getElementById('custom-input');
 
   let currentName = null;
-  let currentLine = '';
   let busy = false;
 
-  function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
-
-  function randomEmployee(){
-    return pick(names);
+  // ЗВУКИ (Web Audio)
+  let audioCtx;
+  function playSound(type) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+      
+      if (type === 'click') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now); osc.stop(now + 0.1);
+      } else if (type === 'spank') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150, now);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now); osc.stop(now + 0.15);
+      } else if (type === 'fire') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+      }
+    } catch(e) {}
   }
 
-  function showVisitor(name){
-    currentName = name;
-    const data = characters[name];
-    currentLine = pick(data.lines);
-    
-    // Настройка внешности
-    dummyBody.style.background = data.color;
-    
-    // Сброс причесок
-    dummyHair.className = '';
-    dummyHair.style.display = 'none';
-    if (data.hairClass) {
-      dummyHair.className = data.hairClass;
-      dummyHair.style.display = 'block';
-    }
+  function getRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
 
-    dummyMouth.className = 'mouth' + (data.sad ? ' sad' : '');
+  function spawnDummy() {
+    busy = false;
+    currentName = getRandom(names);
+    const dialogue = getRandom(characters[currentName]);
     
-    visitorEl.classList.remove('away');
-    speakerEl.textContent = name;
-    lineEl.textContent = '«' + currentLine + '»';
+    visitorEl.classList.remove('hidden');
+    speakerEl.textContent = currentName;
+    lineEl.textContent = '«' + dialogue + '»';
     
     renderChoices();
   }
 
-  function hideVisitor(){
-    visitorEl.classList.add('away');
-    speakerEl.textContent = '';
-    lineEl.textContent = '';
-    choicesEl.innerHTML = '';
-    customRow.classList.add('hidden');
-    currentName = null;
-    currentLine = '';
+  function hideDummy() {
+    visitorEl.classList.add('hidden');
   }
 
-  function nextVisitor(delay){
-    busy = true;
-    hideVisitor();
-    setTimeout(() => {
-      busy = false;
-      showVisitor(randomEmployee());
-    }, delay || 800);
-  }
-
-  function renderChoices(){
+  function renderChoices() {
     choicesEl.innerHTML = '';
-    customRow.classList.add('hidden');
+    customRow.classList.remove('active');
     customInput.value = '';
 
-    const opts = [
-      { t: 'Выслушать', act: 'listen' },
-      { t: 'Дать под сраку 👋', act: 'spank' },
-      { t: 'Выгнать', act: 'fire' },
-      { t: 'Сказать своё...', act: 'custom' }
+    const options = [
+      { text: 'Выслушать (молча)', action: 'listen' },
+      { text: 'Дать под сраку', action: 'spank' },
+      { text: 'Выгнать из кабинета', action: 'fire' },
+      { text: 'Сказать своё...', action: 'custom' }
     ];
 
-    opts.forEach(o => {
-      const b = document.createElement('button');
-      b.textContent = o.t;
-      b.onclick = (e) => {
-        playSound('click');
-        doAction(o.act, e);
-      };
-      choicesEl.appendChild(b);
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.textContent = opt.text;
+      btn.onclick = () => handleAction(opt.action);
+      choicesEl.appendChild(btn);
     });
   }
 
-  // Эффект всплывающего текста/эмодзи
-  function spawnEffect(text, x, y) {
-    const el = document.createElement('div');
-    el.className = 'effect';
-    el.textContent = text;
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    document.getElementById('game-container').appendChild(el);
-    setTimeout(() => el.remove(), 800);
-  }
-
-  function doAction(act, event){
+  function handleAction(action) {
     if (busy || !currentName) return;
-    
-    if (act === 'custom'){
-      customRow.classList.remove('hidden');
+    playSound('click');
+
+    if (action === 'custom') {
+      customRow.classList.add('active');
       customInput.focus();
       return;
     }
-    
-    busy = true;
-    let result = '';
-    let effectEmoji = '';
-    
-    // Получаем координаты для эффекта
-    const rect = event.target.getBoundingClientRect();
-    const containerRect = document.getElementById('game-container').getBoundingClientRect();
-    const x = rect.left - containerRect.left + (rect.width / 2);
-    const y = rect.top - containerRect.top;
 
-    if (act === 'listen'){
-      result = 'Вы молча киваете. Сотрудник уходит, чувствуя себя немного лучше. Вы — нет.';
-      effectEmoji = '💤';
-    } else if (act === 'spank'){
-      playSound('spank');
-      document.getElementById('dummyModel').classList.add('spanked');
-      setTimeout(() => document.getElementById('dummyModel').classList.remove('spanked'), 400);
-      
-      // Вспышка
-      flashEffect.style.animation = 'none';
-      flashEffect.offsetHeight;
-      flashEffect.style.animation = 'flashAnim 0.3s ease-out';
-      
-      result = 'Вы дали ' + currentName + ' под сраку. ' + currentName + ' подпрыгнул(а) и выбежал(а).';
-      effectEmoji = '💥';
-    } else if (act === 'fire'){
-      playSound('fire');
-      result = 'Вы указали ' + currentName + ' на дверь. ' + currentName + ' исчез(ла) в коридоре.';
-      effectEmoji = '🚪';
-    }
-    
-    spawnEffect(effectEmoji, x, y);
-    
-    lineEl.textContent = '— ' + result;
-    speakerEl.textContent = 'МИСТЕР МОРРИГАН';
+    busy = true;
     choicesEl.innerHTML = '';
-    customRow.classList.add('hidden');
     
-    setTimeout(() => nextVisitor(1000), 1200);
+    if (action === 'listen') {
+      lineEl.textContent = 'Вы молча киваете. Сотрудник уходит, так и не поняв, что вы его не слушали.';
+      speakerEl.textContent = 'МИСТЕР МОРРИГАН';
+      setTimeout(nextVisitor, 1500);
+    } 
+    else if (action === 'spank') {
+      playSound('spank');
+      visitorEl.classList.add('spank-anim');
+      lineEl.textContent = 'Вы дали ' + currentName + ' под сраку. ' + currentName + ' подпрыгивает и убегает.';
+      speakerEl.textContent = 'МИСТЕР МОРРИГАН';
+      setTimeout(() => { visitorEl.classList.remove('spank-anim'); nextVisitor(); }, 600);
+    } 
+    else if (action === 'fire') {
+      playSound('fire');
+      lineEl.textContent = 'Вы указываете ' + currentName + ' на дверь. Дверь хлопает.';
+      speakerEl.textContent = 'МИСТЕР МОРРИГАН';
+      setTimeout(nextVisitor, 1000);
+    }
   }
 
-  customSend.onclick = function(){
+  // Отправка своего текста
+  window.sendCustom = function() {
     if (busy || !currentName) return;
     const text = customInput.value.trim();
     if (!text) return;
+    
     playSound('click');
     busy = true;
+    customRow.classList.remove('active');
+    choicesEl.innerHTML = '';
     
     lineEl.textContent = '— Вы: «' + text + '»';
     speakerEl.textContent = 'МИСТЕР МОРРИГАН';
-    choicesEl.innerHTML = '';
-    customRow.classList.add('hidden');
     
     setTimeout(() => {
       const reactions = [
-        currentName + ' моргает. Не понимает.',
-        currentName + ' кивает. Кажется, тоже не понимает.',
-        currentName + ' говорит: «Ясно». И уходит.',
-        currentName + ' делает вид, что понял(а).',
-        currentName + ' молча выходит.'
+        currentName + ' смотрит на вас пустым взглядом.',
+        currentName + ' кивает, ничего не понимая.',
+        currentName + ' разворачивается и уходит.',
+        currentName + ' говорит: «Ясно».'
       ];
-      lineEl.textContent = '— ' + pick(reactions);
-      setTimeout(() => nextVisitor(1000), 1000);
-    }, 800);
+      lineEl.textContent = '— ' + getRandom(reactions);
+      setTimeout(nextVisitor, 1500);
+    }, 1000);
   };
 
-  customInput.addEventListener('keydown', function(e){
-    if (e.key === 'Enter') customSend.click();
-  });
+  function nextVisitor() {
+    hideDummy();
+    setTimeout(() => {
+      spawnDummy();
+    }, 500);
+  }
 
-  // Старт
-  setTimeout(() => showVisitor(randomEmployee()), 500);
+  // Инициализация
+  setTimeout(spawnDummy, 500);
+
 })();
 </script>
 </body>
