@@ -64,17 +64,18 @@
 
 <script>
 (function(){
+  // Персонажи: только имя, характер и стартовые фразы. Никаких заранее заготовленных ответов!
   const characters = {
     "Джеффри": {
-      desc: "Молодой, неуверенный сотрудник Бюро. Пишет диплом о бюрократии. Любит кошку Чонди. Говорит вежливо.",
+      desc: "Молодой, неуверенный сотрудник Бюро. Пишет диплом о бюрократии. Любит кошку Чонди. Говорит вежливо, называет директора 'Мистер Морриган'.",
       lines: ["Мистер Морриган, я закончил черновик диплома...", "Мистер Морриган, я хотел уточнить по поводу кошки Чонди...", "Мистер Морриган, а можно мне лицензию второй категории?"]
     },
     "Бернадетт": {
-      desc: "Странная сотрудница. Теряет ложки, находит трупы. Обожает паука-фамильяра Бусинку. Говорит с безуминкой.",
+      desc: "Странная сотрудница. Теряет ложки, находит трупы. Обожает паука-фамильяра Бусинку. Говорит с лёгким безумием в голосе.",
       lines: ["Мистер Морриган, у нас опять пропали ложки...", "Мистер Морриган, чайная ложка в столовой... она смотрит...", "Мистер Морриган, Бусинка сплёл паутину над сейфом..."]
     },
     "Альфред": {
-      desc: "Старший инспектор. Зануда, строго следует регламенту. Переживает о лицензиях и темных практиках.",
+      desc: "Старший инспектор. Зануда, строго следует регламенту. Переживает о лицензиях, проверках и темных практиках в бараках.",
       lines: ["Мистер Морриган, никто не выехал на адрес мага с 4-й лицензией...", "Мистер Морриган, сигнал о тёмных практиках в бараках...", "Мистер Морриган, бумаги по протоколу «Гармония» не подписаны..."]
     },
     "Эвелин": {
@@ -119,7 +120,6 @@
   let currentSpankCount = 0;
   let busy = false;
   let lastTwo = [];
-  let chatHistory = []; // Хранилище диалога для ИИ
 
   let audioCtx;
   function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
@@ -151,9 +151,6 @@
     const d = characters[currentName]; 
     currentLine = getRandom(d.lines);
     
-    // Инициализируем историю диалога с изначальной фразы персонажа
-    chatHistory = [{ role: 'assistant', content: currentLine }];
-
     visitorEl.classList.remove('hidden'); faceTextEl.textContent = getFace(currentName);
     speakerEl.textContent = currentName; lineEl.textContent = '«' + currentLine + '»'; lineEl.scrollTop = 0;
     if (d.isEvelyn) addCoffeeCup();
@@ -162,38 +159,27 @@
   }
   function hideDummy() { visitorEl.classList.add('hidden'); }
 
-  // Функция рендера кнопок. Если inDialogue = true, появляется кнопка "Ответить ещё"
   function renderChoices(inDialogue = false) {
     choicesEl.innerHTML = ''; customRow.classList.remove('active'); customInput.value = '';
-    
     const opts = [];
-    if (inDialogue) {
-      opts.push({ t: 'Ответить ещё...', a: 'custom' });
-    } else {
-      opts.push({ t: 'Сказать своё...', a: 'custom' });
-    }
+    if (inDialogue) opts.push({ t: 'Ответить ещё...', a: 'custom' });
+    else opts.push({ t: 'Сказать своё...', a: 'custom' });
+    
     opts.push({ t: 'Дать под сраку', a: 'spank' });
     opts.push({ t: 'Выгнать из кабинета', a: 'fire' });
     
-    if (inDialogue) {
-      opts.push({ t: 'Закончить разговор', a: 'leave' });
-    } else {
-      opts.push({ t: 'Выслушать (молча)', a: 'listen' });
-    }
+    if (inDialogue) opts.push({ t: 'Закончить разговор', a: 'leave' });
+    else opts.push({ t: 'Выслушать (молча)', a: 'listen' });
 
     opts.forEach(o => {
-      const b = document.createElement('button'); b.textContent = o.t; 
-      b.onclick = () => handleAction(o.a); 
-      choicesEl.appendChild(b);
+      const b = document.createElement('button'); b.textContent = o.t; b.onclick = () => handleAction(o.a); choicesEl.appendChild(b);
     });
   }
 
   function handleAction(action) {
     if (busy || !currentName) return; initAudio();
     if (action === 'custom') { playSound('click'); customRow.classList.add('active'); customInput.focus(); return; }
-    
-    const d = characters[currentName]; 
-    choicesEl.innerHTML = '';
+    const d = characters[currentName]; choicesEl.innerHTML = '';
 
     if (action === 'listen' || action === 'leave') {
       busy = true; playSound('sad');
@@ -206,15 +192,11 @@
       if (d.isDima) {
         busy = false; speakerEl.textContent = 'ДИМА'; 
         lineEl.textContent = '— Дима: «Слышь, ты чё, долбанулся? Иди нахуй».';
-        // Добавляем в историю, чтобы ИИ знал о шлепке
-        chatHistory.push({ role: 'assistant', content: 'Слышь, ты чё, долбанулся? Иди нахуй.' });
         setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(true); }, 800);
       } 
       else if (currentSpankCount < 3) {
         busy = false; speakerEl.textContent = currentName;
-        const spankReply = 'ойкает. «Мистер Морриган, это же насилие!»';
-        lineEl.textContent = '— ' + currentName + ' ' + spankReply;
-        chatHistory.push({ role: 'assistant', content: spankReply });
+        lineEl.textContent = '— ' + currentName + ' ойкает. «Мистер Морриган, что вы делаете? Это же насилие!»';
         setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(true); }, 800);
       } 
       else {
@@ -235,42 +217,38 @@
     }
   }
 
-  // === ГЕНЕРАЦИЯ ИИ (С ИСТОРИЕЙ ДИАЛОГА) ===
+  // === НАСТОЯЩАЯ ГЕНЕРАЦИЯ ЧЕРЕЗ KeylessAI (БЕЗ КЛЮЧЕЙ) ===
   window.sendCustom = async function() {
     if (busy || !currentName) return;
     const text = customInput.value.trim(); if (!text) return;
     
     initAudio(); playSound('click'); busy = true; customRow.classList.remove('active'); choicesEl.innerHTML = '';
-    lineEl.innerHTML = '— Вы: «' + text + '»<br><br><span class="typing">Собеседник думает</span>'; speakerEl.textContent = '';
-
-    // Добавляем твою реплику в историю
-    chatHistory.push({ role: 'user', content: text });
+    lineEl.innerHTML = '— Вы: «' + text + '»<br><br><span class="typing">Нейросеть думает</span>'; speakerEl.textContent = '';
 
     const charData = characters[currentName];
     
-    // Системный промпт для жесткого удержания роли
-    const systemPrompt = `Ты персонаж ${currentName}. Твой характер: ${charData.desc}. Сеттинг: 1922 год, Огайо, Бюро Магического Регулирования. Ты ведешь диалог с директором Бюро (Мистером Морриганом). Отвечай коротко (до 25 слов), в характере. Если тебя оскорбляют или бьют, реагируй соответственно своему характеру. Не пиши от третьего лица. Пиши только то, что говорит персонаж.`;
+    // Формируем системный промпт для нейросети
+    const systemPrompt = `Ты персонаж ${currentName}. Твой характер: ${charData.desc}. Сеттинг: 1922 год, Огайо, Бюро Магического Регулирования. Ты ведешь диалог с директором Бюро (Мистером Морриганом). Директор только что сказал тебе: "${text}". Напиши ответ от лица своего персонажа. Ответ должен быть коротким (до 20 слов), живым, в характере. Если тебя оскорбляют или бьют, реагируй соответственно своему характеру. Не пиши от третьего лица. Пиши только то, что говорит персонаж.`;
 
     try {
-      const res = await fetch('https://text.pollinations.ai/', {
+      // Запрос к бесплатному OpenAI-совместимому шлюзу KeylessAI
+      const res = await fetch('https://keylessai.thryx.workers.dev/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          model: 'gpt-4o', // Шлюз сам перенаправит на доступную бесплатную модель
           messages: [
             { role: 'system', content: systemPrompt },
-            ...chatHistory
-          ],
-          model: 'openai'
+            { role: 'user', content: text }
+          ]
         })
       });
 
       if (!res.ok) throw new Error('API error');
       
-      let aiReply = await res.text();
-      aiReply = aiReply.trim().replace(/^["'«]|["'»]$/g, ''); // Чистим кавычки
-
-      // Записываем ответ ИИ в историю
-      chatHistory.push({ role: 'assistant', content: aiReply });
+      const data = await res.json();
+      let aiReply = data.choices[0].message.content.trim();
+      aiReply = aiReply.replace(/^["'«]|["'»]$/g, ''); // Чистим кавычки
 
       const lowerText = text.toLowerCase();
       if (lowerText.includes('нахуй') || lowerText.includes('долбо')) playSound('angry'); else playSound('sad');
@@ -279,16 +257,13 @@
       lineEl.textContent = '— ' + aiReply;
       
       busy = false;
-      renderChoices(true); // Возвращаем кнопки для продолжения диалога
+      renderChoices(true); 
       
     } catch (err) {
       console.error(err);
       playSound('sad');
-      lineEl.textContent = '— ' + currentName + ' молчит, глядя на вас с недоумением. (Ошибка связи с ИИ)';
+      lineEl.textContent = '— ' + currentName + ' молчит, глядя на вас с недоумением. (Ошибка связи с нейросетью)';
       speakerEl.textContent = currentName;
-      
-      // Убираем последнюю реплику из истории, чтобы не засорять контекст, если была ошибка
-      chatHistory.pop(); 
       
       busy = false;
       renderChoices(true); 
