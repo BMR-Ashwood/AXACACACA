@@ -307,4 +307,94 @@
       
       if (d.isDima) {
         busy = false; speakerEl.textContent = 'ДИМА'; 
-        lineEl.textContent = '— Дима: «С
+        lineEl.textContent = '— Дима: «Слышь, ты чё, долбанулся? Иди нахуй».';
+        setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(true); }, 800);
+      } 
+      else if (currentSpankCount < 3) {
+        busy = false; speakerEl.textContent = currentName;
+        lineEl.textContent = '— ' + currentName + ' ойкает. «Мистер Морриган, что вы делаете? Это же насилие!»';
+        setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(true); }, 800);
+      } 
+      else {
+        busy = true; speakerEl.textContent = '';
+        lineEl.textContent = 'Вы дали ' + currentName + ' под сраку в третий раз. ' + currentName + ' убегает.';
+        setTimeout(() => { visitorEl.classList.remove('spank-anim'); nextVisitor(); }, 3500);
+      }
+    } 
+    else if (action === 'fire') {
+      if (d.isDima) {
+        playSound('angry'); lineEl.textContent = 'Вы попытались выгнать Диму. В ответ он вам набил ебало. Вы ахуели. Дима ушёл сам.';
+        speakerEl.textContent = ''; busy = true; setTimeout(() => nextVisitor(), 4000); 
+      } else {
+        playSound('click'); busy = true; speakerEl.textContent = '';
+        lineEl.textContent = 'Вы указываете ' + currentName + ' на дверь. Дверь хлопает.';
+        setTimeout(nextVisitor, 3000);
+      }
+    }
+  }
+
+  window.sendCustom = function() {
+    if (busy || !currentName) return;
+    const text = customInput.value.trim(); if (!text) return;
+    
+    initAudio(); playSound('click'); busy = true; customRow.classList.remove('active'); choicesEl.innerHTML = '';
+    lineEl.innerHTML = '— Вы: «' + text + '»<br><br><span class="typing">Думает</span>'; speakerEl.textContent = '';
+
+    const charData = characters[currentName];
+    const lowerText = text.toLowerCase();
+    
+    setTimeout(() => {
+      let aiReply = "";
+      
+      // 1. Проверка на ключевые слова (тема персонажа)
+      const hasKeyword = charData.keywords.some(kw => lowerText.includes(kw));
+      
+      // 2. Проверка на мемы / интернет-культуру
+      const memeWords = ["скибиди", "сигма", "87", "капибара", "пон", "сиксэвен", "сосал", "мем", "тикток", "кринж", "вайб"];
+      const hasMeme = memeWords.some(mw => lowerText.includes(mw));
+      
+      // 3. Проверка на оскорбления
+      const insultWords = ["дурак", "тупой", "идиот", "мудак", "нахуй", "долбо", "еба", "сука"];
+      const hasInsult = insultWords.some(iw => lowerText.includes(iw));
+
+      if (hasKeyword) {
+        aiReply = getRandom(charData.responses);
+        if (currentName === "Эвелин" && (lowerText.includes('кофе') || lowerText.includes('чашк') || lowerText.includes('принеси') || lowerText.includes('ещё') || lowerText.includes('еще'))) {
+          addCoffeeCup();
+        }
+      } else if (hasMeme) {
+        aiReply = getRandom(charData.memes);
+      } else if (hasInsult) {
+        aiReply = getRandom(charData.insults);
+      } else {
+        // Если ничего не подошло — проверяем на вопрос "да/нет" или выдаем fallback
+        const isQuestion = lowerText.includes('?') || lowerText.includes('можно') || lowerText.includes('правда') || lowerText.includes('ли');
+        
+        if (isQuestion) {
+          aiReply = Math.random() > 0.5 ? getRandom(charData.yes) : getRandom(charData.no);
+        } else {
+          aiReply = getRandom(charData.fallback);
+        }
+      }
+
+      if (hasInsult || hasMeme) playSound('angry');
+      else playSound('sad');
+      
+      speakerEl.textContent = currentName;
+      lineEl.textContent = '— ' + aiReply;
+      
+      busy = false;
+      renderChoices(true); 
+    }, 800); // Чуть увеличил задержку для эффекта раздумий
+  };
+
+  function nextVisitor() { 
+    hideDummy(); 
+    setTimeout(spawnDummy, 800); 
+  }
+  
+  setTimeout(spawnDummy, 500);
+})();
+</script>
+</body>
+</html>
