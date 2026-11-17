@@ -15,7 +15,6 @@
   .p1 { width: 50px; height: 70px; left: 10%; bottom: 5%; transform: rotate(-5deg); }
   .p2 { width: 60px; height: 40px; right: 10%; bottom: 10%; transform: rotate(8deg); }
   
-  /* Стили для чашек */
   .coffee-cup { position: absolute; width: 26px; height: 32px; background: #fff; border: 2px solid #ddd; border-radius: 0 0 10px 10px; box-shadow: inset -5px 0 5px rgba(0,0,0,0.1), 2px 2px 4px rgba(0,0,0,0.2); z-index: 7; animation: dropIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
   .coffee-cup::before { content: ''; position: absolute; top: -2px; left: -2px; right: -2px; height: 8px; background: #6b4c3a; border-radius: 50%; border: 2px solid #ddd; border-top: none; }
   .coffee-cup::after { content: ''; position: absolute; top: 8px; right: -12px; width: 10px; height: 14px; border: 2px solid #ddd; border-left: none; border-radius: 0 10px 10px 0; }
@@ -67,7 +66,6 @@
 
 <script>
 (function(){
-  // ==== ПАРАМЕТРЫ ПЕРСОНАЖЕЙ ====
   const characters = {
     "Джеффри": {
       desc: "Молодой, неуверенный сотрудник Бюро. Пишет диплом.",
@@ -141,18 +139,18 @@
       fallback: "Подождите... а мы это обсуждали? Я не помню. Вы не стирали мне память?"
     },
     "Нетц": {
-      desc: "Заместитель директора. Приглашает Майкла на ужин к себе домой.",
-      lines: ["Мистер Морриган, я хотел пригласить Майкла на ужин...", "Мистер Морриган, как вы думаете, Майкл придёт ко мне на ужин?", "Мистер Морриган, я приготовлю ужин для Майкла."],
-      keywords: ["майкл", "ужин", "пригласить", "домой", "поесть", "готовить", "придёт", "стол"],
+      desc: "Заместитель директора. Хочет пригласить Мистера Морригана на ужин к себе домой.",
+      lines: ["Мистер Морриган, я хотел пригласить вас на ужин...", "Мистер Морриган, как вы думаете, вы сможете прийти ко мне на ужин?", "Мистер Морриган, я приготовлю ужин специально для вас."],
+      keywords: ["ужин", "пригласить", "домой", "поесть", "готовить", "придёте", "стол", "приготовлю"],
       responses: [
-        "Мистер Морриган, я хотел пригласить Майкла к себе на ужин. Как думаете, он согласится?",
-        "Я уже накрыл стол дома. Всё готово для Майкла.",
-        "Может, вы тоже придёте? Я готовлю ужин, Майкл уже приглашён.",
-        "Майкл сказал, что придёт ко мне домой на ужин. Я очень рад."
+        "Мистер Морриган, я хотел пригласить вас к себе на ужин. Как думаете, вы сможете прийти?",
+        "Я уже накрыл стол дома. Всё готово для вас, мистер Морриган.",
+        "Может, вы всё-таки придёте? Я готовлю ужин, и это будет скромно, но от души.",
+        "Мистер Морриган, я буду очень рад, если вы придёте ко мне домой на ужин."
       ],
-      yes: ["Да, я надеюсь, Майкл придёт.", "Да, ужин точно состоится."],
-      no: ["Нет, боюсь, Майкл не придёт...", "Нет, я ещё не пригласил его."],
-      fallback: "Простите, мистер Морриган, я думаю только об ужине с Майклом. Вы что-то сказали?"
+      yes: ["Да, я надеюсь, вы придёте, мистер Морриган.", "Да, ужин точно состоится, если вы согласны."],
+      no: ["Нет, боюсь, вы не придёте...", "Нет, я ещё не накрыл на стол."],
+      fallback: "Простите, мистер Морриган, я думаю только об ужине. Вы что-то сказали?"
     },
     "Владимир": {
       desc: "Нищий посетитель. Постоянно ноет, что 15 долларов за лицензию — грабёж.",
@@ -204,7 +202,6 @@
   let busy = false;
   let lastTwo = [];
 
-  // ==== ЗВУК ====
   let audioCtx;
   function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
   function playSound(type) {
@@ -223,12 +220,10 @@
     return getRandom(faces[name] || [":0"]);
   }
   
-  // ФУНКЦИЯ ДОБАВЛЕНИЯ ЧАШКИ
   function addCoffeeCup() {
-    if (document.querySelectorAll('.coffee-cup').length > 40) return; // Ограничение, чтобы не сломать браузер
+    if (document.querySelectorAll('.coffee-cup').length > 40) return;
     const c = document.createElement('div'); 
     c.className='coffee-cup'; 
-    // Делаем рандомное расположение, чтобы они не накладывались строго друг на друга
     c.style.left=(5+Math.random()*30)+'%'; 
     c.style.bottom=(20+Math.random()*10)+'%'; 
     c.style.transform=`rotate(${Math.random()*20-10}deg)`; 
@@ -309,7 +304,6 @@
     }
   }
 
-  // ==== ГЕНЕРАТОР ОТВЕТОВ С ЛОГИКОЙ КОФЕ ====
   window.sendCustom = function() {
     if (busy || !currentName) return;
     const text = customInput.value.trim(); if (!text) return;
@@ -322,16 +316,13 @@
     
     setTimeout(() => {
       let aiReply = "";
-      
-      // Проверяем, есть ли ключевые слова персонажа
       const hasKeyword = charData.keywords.some(kw => lowerText.includes(kw));
       
       if (hasKeyword) {
         aiReply = getRandom(charData.responses);
         
-        // СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ ЭВЕЛИН (Добавляем чашку навсегда)
         if (currentName === "Эвелин" && (lowerText.includes('кофе') || lowerText.includes('чашк') || lowerText.includes('принеси') || lowerText.includes('ещё') || lowerText.includes('еще'))) {
-          addCoffeeCup(); // Добавляет чашку в DOM, она не исчезнет при смене посетителя
+          addCoffeeCup();
         }
       } else {
         const isQuestion = lowerText.includes('?') || lowerText.includes('можно') || lowerText.includes('правда') || lowerText.includes('ты') || lowerText.includes('вы');
