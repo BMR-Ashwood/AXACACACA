@@ -14,10 +14,13 @@
   .paper { position: absolute; background: #fff; border: 1px solid #ccc; box-shadow: 1px 1px 3px rgba(0,0,0,0.1); z-index: 6; }
   .p1 { width: 50px; height: 70px; left: 10%; bottom: 5%; transform: rotate(-5deg); }
   .p2 { width: 60px; height: 40px; right: 10%; bottom: 10%; transform: rotate(8deg); }
-  .coffee-cup { position: absolute; bottom: 25%; width: 26px; height: 32px; background: #fff; border: 2px solid #ddd; border-radius: 0 0 10px 10px; box-shadow: inset -5px 0 5px rgba(0,0,0,0.1), 2px 2px 4px rgba(0,0,0,0.2); z-index: 7; animation: dropIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  
+  /* Стили для чашек */
+  .coffee-cup { position: absolute; width: 26px; height: 32px; background: #fff; border: 2px solid #ddd; border-radius: 0 0 10px 10px; box-shadow: inset -5px 0 5px rgba(0,0,0,0.1), 2px 2px 4px rgba(0,0,0,0.2); z-index: 7; animation: dropIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
   .coffee-cup::before { content: ''; position: absolute; top: -2px; left: -2px; right: -2px; height: 8px; background: #6b4c3a; border-radius: 50%; border: 2px solid #ddd; border-top: none; }
   .coffee-cup::after { content: ''; position: absolute; top: 8px; right: -12px; width: 10px; height: 14px; border: 2px solid #ddd; border-left: none; border-radius: 0 10px 10px 0; }
   @keyframes dropIn { 0% { transform: translateY(-20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+  
   #visitor { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; margin-bottom: 20%; transition: all 0.3s ease; }
   #visitor.hidden { opacity: 0; transform: translateY(20px); }
   .dummy-head { width: 75px; height: 90px; background: #a0a0a0; border-radius: 40px 40px 20px 20px; box-shadow: inset -5px -5px 10px rgba(0,0,0,0.1); margin-bottom: -5px; position: relative; display: flex; justify-content: center; align-items: center; }
@@ -38,14 +41,11 @@
   #custom-row.active { display: flex; }
   input { flex: 1; padding: 10px; border: 2px solid #ccc; border-radius: 8px; font-size: 15px; outline: none; }
   #send-btn { background: #4caf50; color: #fff; border: none; padding: 0 20px; width: auto; }
-  #ai-status { position: absolute; top: 8px; left: 8px; right: 8px; font-size: 11px; color: #555; background: rgba(255,255,255,0.85); padding: 6px 10px; border-radius: 6px; z-index: 20; display: none; }
-  #ai-status.visible { display: block; }
 </style>
 </head>
 <body>
 <div id="game">
   <div id="room">
-    <div id="ai-status"></div>
     <div id="visitor" class="hidden">
       <div class="dummy-head"><div class="face" id="face-text">:0</div></div>
       <div class="dummy-body"></div>
@@ -65,266 +65,302 @@
   </div>
 </div>
 
-<script type="module">
-import * as webllm from "https://esm.run/@mlc-ai/web-llm";
-
-// ==== ДАННЫЕ ПЕРСОНАЖЕЙ ====
-const characters = {
-  "Джеффри": {
-    desc: "Молодой, неуверенный сотрудник Бюро. Пишет диплом о бюрократии. Любит котёнка Чонди (милого и сладкого). Говорит вежливо.",
-    lines: ["Мистер Морриган, я закончил черновик диплома...", "Мистер Морриган, я хотел уточнить по поводу котёнка Чонди...", "Мистер Морриган, а можно мне лицензию второй категории?"]
-  },
-  "Бернадетт": {
-    desc: "Странная сотрудница. Теряет ложки, находит трупы. Обожает паучка Бусинку (она девочка). Говорит с безуминкой.",
-    lines: ["Мистер Морриган, у нас опять пропали ложки...", "Мистер Морриган, чайная ложка в столовой... она смотрит...", "Мистер Морриган, Бусинка сплела паутину над сейфом..."]
-  },
-  "Альфред": {
-    desc: "Старший инспектор. Зануда, строго следует регламенту. Переживает о лицензиях и темных практиках.",
-    lines: ["Мистер Морриган, никто не выехал на адрес мага с 4-й лицензией...", "Мистер Морриган, сигнал о тёмных практиках в бараках...", "Мистер Морриган, бумаги по протоколу «Гармония» не подписаны..."]
-  },
-  "Эвелин": {
-    desc: "Добрая, наивная сотрудница. Приносит кофе с 30 ложками сахара. Искренне хочет угодить.",
-    isEvelyn: true,
-    lines: ["Мистер Морриган, я вам кофе. Очень сладкий...", "Мистер Морриган, ваш кофе. Я добавила сахар...", "Мистер Морриган, кофе. У меня слиплись зубы..."]
-  },
-  "Ваня": {
-    desc: "Сотрудник, который постоянно сомневается в своей ориентации. Ищет подтверждения у директора.",
-    lines: ["Мистер Морриган, я ведь не гей?", "Мистер Морриган, если человеку нравится слово «эспрессо» — это нормально?", "Мистер Морриган, можно я не буду отвечать про ориентацию в анкете?"]
-  },
-  "Нетц": {
-    desc: "Заместитель директора. Нервный, параноидальный. Думает, что о нём шепчутся. Ищет ошибки в отчётах.",
-    lines: ["Мистер Морриган, почему на меня так странно смотрят?", "Мистер Морриган, в строке 47 написано «нет данных»...", "Мистер Морриган, мой отчёт никто не читает. Из-за должности?"]
-  },
-  "Владимир": {
-    desc: "Нищий посетитель. Постоянно ноет, что 15 долларов за лицензию — грабёж. Жалкий, но не агрессивный.",
-    isVisitor: true,
-    lines: ["Мистер Морриган... 15 долларов за лицензию — это грабёж...", "Мистер Морриган, мне опять не хватает на лицензию...", "Мистер Морриган, я отдал последнее за вашу лицензию..."]
-  },
-  "Дима": {
-    desc: "Агрессивный посетитель. Грубиян, использует мат. Ненавидит Бюро, правила и лицензии. Не боится директора.",
-    isDima: true,
-    isVisitor: true,
-    lines: ["Слышь, Морриган. Иди нахуй со своими правилами...", "Ты чё, самый умный? Иди нахуй...", "Морриган, ты заебал. Иди нахуй..."]
-  }
-};
-
-const names = Object.keys(characters);
-
-const visitorEl = document.getElementById('visitor');
-const faceTextEl = document.getElementById('face-text');
-const speakerEl = document.getElementById('speaker');
-const lineEl = document.getElementById('line');
-const choicesEl = document.getElementById('choices');
-const customRow = document.getElementById('custom-row');
-const customInput = document.getElementById('custom-input');
-const roomEl = document.getElementById('room');
-const aiStatusEl = document.getElementById('ai-status');
-
-let currentName = null;
-let currentLine = "";
-let currentSpankCount = 0;
-let busy = false;
-let lastTwo = [];
-
-// ==== ЗВУК ====
-let audioCtx;
-function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
-function playSound(type) {
-  try {
-    initAudio(); const now = audioCtx.currentTime;
-    if (type === 'click') { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type='sine'; o.frequency.setValueAtTime(800, now); g.gain.setValueAtTime(0.05, now); g.gain.exponentialRampToValueAtTime(0.001, now+0.05); o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+0.05); }
-    else if (type === 'spank') { const bs = audioCtx.sampleRate*0.1, buf = audioCtx.createBuffer(1, bs, audioCtx.sampleRate), d = buf.getChannelData(0); for(let i=0;i<bs;i++) d[i]=Math.random()*2-1; const n=audioCtx.createBufferSource(); n.buffer=buf; const f=audioCtx.createBiquadFilter(); f.type='lowpass'; f.frequency.setValueAtTime(1000,now); f.frequency.exponentialRampToValueAtTime(100,now+0.1); const g=audioCtx.createGain(); g.gain.setValueAtTime(0.5,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.1); n.connect(f); f.connect(g); g.connect(audioCtx.destination); n.start(now); }
-    else if (type === 'sad') { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type='triangle'; o.frequency.setValueAtTime(300,now); o.frequency.linearRampToValueAtTime(150,now+0.6); g.gain.setValueAtTime(0.1,now); g.gain.linearRampToValueAtTime(0,now+0.6); o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+0.6); }
-    else if (type === 'angry') { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type='sawtooth'; o.frequency.setValueAtTime(400,now); o.frequency.exponentialRampToValueAtTime(800,now+0.2); g.gain.setValueAtTime(0.1,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.2); o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+0.2); }
-  } catch(e){}
-}
-
-function getRandom(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
-function getFace(name) {
-  const faces = { "Джеффри": [":0",":O",":|"], "Бернадетт": [":P",":3",";P"], "Альфред": [":|",":-|",":Z"], "Эвелин": [":3","^_^","UwU"], "Ваня": [":(",":/",":c"], "Нетц": [":'(","T_T","._."], "Владимир": ["T_T",";-;","ToT"], "Дима": [">:(",">:|","ಠ_ಠ"] };
-  return getRandom(faces[name] || [":0"]);
-}
-function addCoffeeCup() {
-  if (document.querySelectorAll('.coffee-cup').length > 15) return;
-  const c = document.createElement('div'); c.className='coffee-cup'; c.style.left=(5+Math.random()*25)+'%'; c.style.bottom=(20+Math.random()*10)+'%'; c.style.transform=`rotate(${Math.random()*20-10}deg)`; roomEl.appendChild(c);
-}
-
-// ==== НЕЙРОСЕТЬ (WebLLM) ====
-let engine = null;
-let aiReady = false;
-let aiLoading = false;
-
-function setAiStatus(text, visible = true) {
-  aiStatusEl.textContent = text;
-  aiStatusEl.classList.toggle('visible', visible);
-}
-
-async function initLocalAI() {
-  if (aiReady || aiLoading) return;
-  aiLoading = true;
-  try {
-    setAiStatus('Загрузка нейросети... 0%');
-    engine = await webllm.CreateMLCEngine(
-      "Llama-3.2-1B-Instruct-q4f16_1-MLC",
-      { initProgressCallback: (p) => setAiStatus('Загрузка нейросети... ' + p.text) }
-    );
-    aiReady = true;
-    setAiStatus('Нейросеть готова', false);
-  } catch (e) {
-    setAiStatus('Ошибка загрузки: ' + e.message, true);
-    console.error(e);
-    aiLoading = false;
-  }
-}
-
-// Предзагрузка при открытии страницы
-initLocalAI();
-
-// ==== ИГРОВАЯ ЛОГИКА ====
-function spawnDummy() {
-  busy = false; currentSpankCount = 0;
-  let avail = names.filter(n => !lastTwo.includes(n)); if (!avail.length) avail = names;
-  currentName = getRandom(avail); lastTwo.push(currentName); if (lastTwo.length > 2) lastTwo.shift();
-
-  const d = characters[currentName];
-  currentLine = getRandom(d.lines);
-
-  visitorEl.classList.remove('hidden'); faceTextEl.textContent = getFace(currentName);
-  speakerEl.textContent = currentName; lineEl.textContent = '«' + currentLine + '»'; lineEl.scrollTop = 0;
-  if (d.isEvelyn) addCoffeeCup();
-
-  renderChoices(false);
-}
-function hideDummy() { visitorEl.classList.add('hidden'); }
-
-function renderChoices(inDialogue = false) {
-  choicesEl.innerHTML = ''; customRow.classList.remove('active'); customInput.value = '';
-  const opts = [];
-  if (inDialogue) opts.push({ t: 'Ответить ещё...', a: 'custom' });
-  else opts.push({ t: 'Сказать своё...', a: 'custom' });
-
-  opts.push({ t: 'Дать под сраку', a: 'spank' });
-  opts.push({ t: 'Выгнать из кабинета', a: 'fire' });
-
-  if (inDialogue) opts.push({ t: 'Закончить разговор', a: 'leave' });
-  else opts.push({ t: 'Выслушать (молча)', a: 'listen' });
-
-  opts.forEach(o => {
-    const b = document.createElement('button'); b.textContent = o.t; b.onclick = () => handleAction(o.a); choicesEl.appendChild(b);
-  });
-}
-
-function handleAction(action) {
-  if (busy || !currentName) return; initAudio();
-  if (action === 'custom') { playSound('click'); customRow.classList.add('active'); customInput.focus(); return; }
-  const d = characters[currentName]; choicesEl.innerHTML = '';
-
-  if (action === 'listen' || action === 'leave') {
-    busy = true; playSound('sad');
-    lineEl.textContent = d.isVisitor ? currentName + ' разворачивается и уходит.' : 'Вы отпускаете сотрудника. Он уходит.';
-    speakerEl.textContent = ''; setTimeout(nextVisitor, 2000);
-  }
-  else if (action === 'spank') {
-    playSound('spank'); currentSpankCount++; visitorEl.classList.add('spank-anim');
-
-    if (d.isDima) {
-      busy = false; speakerEl.textContent = 'ДИМА';
-      lineEl.textContent = '— Дима: «Слышь, ты чё, долбанулся? Иди нахуй».';
-      setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(true); }, 800);
-    }
-    else if (currentSpankCount < 3) {
-      busy = false; speakerEl.textContent = currentName;
-      lineEl.textContent = '— ' + currentName + ' ойкает. «Мистер Морриган, что вы делаете? Это же насилие!»';
-      setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(true); }, 800);
-    }
-    else {
-      busy = true; speakerEl.textContent = '';
-      lineEl.textContent = 'Вы дали ' + currentName + ' под сраку в третий раз. ' + currentName + ' убегает.';
-      setTimeout(() => { visitorEl.classList.remove('spank-anim'); nextVisitor(); }, 3500);
-    }
-  }
-  else if (action === 'fire') {
-    if (d.isDima) {
-      playSound('angry'); lineEl.textContent = 'Вы попытались выгнать Диму. В ответ он вам набил ебало. Вы ахуели. Дима ушёл сам.';
-      speakerEl.textContent = ''; busy = true; setTimeout(() => nextVisitor(), 4000);
-    } else {
-      playSound('click'); busy = true; speakerEl.textContent = '';
-      lineEl.textContent = 'Вы указываете ' + currentName + ' на дверь. Дверь хлопает.';
-      setTimeout(nextVisitor, 3000);
-    }
-  }
-}
-
-// ==== КАСТОМНЫЙ ОТВЕТ ЧЕРЕЗ ЛОКАЛЬНУЮ НЕЙРОСЕТЬ ====
-window.sendCustom = async function() {
-  if (busy || !currentName) return;
-  const text = customInput.value.trim(); if (!text) return;
-
-  initAudio(); playSound('click'); busy = true;
-  customRow.classList.remove('active'); choicesEl.innerHTML = '';
-  lineEl.innerHTML = '— Вы: «' + text + '»<br><br><span class="typing">Нейросеть думает</span>';
-  speakerEl.textContent = '';
-
-  const charData = characters[currentName];
-
-  // Если модель ещё не готова — показываем статус и ждём
-  if (!aiReady) {
-    if (!aiLoading) initLocalAI();
-    lineEl.innerHTML = '— Вы: «' + text + '»<br><br><span class="typing">Нейросеть загружается, подождите...</span>';
-    // Ждём до 60 секунд
-    const start = Date.now();
-    while (!aiReady && Date.now() - start < 60000) {
-      await new Promise(r => setTimeout(r, 500));
-    }
-    if (!aiReady) {
-      lineEl.textContent = '— ' + currentName + ' молчит. (Нейросеть не загрузилась. Проверьте WebGPU.)';
-      speakerEl.textContent = currentName;
-      busy = false; renderChoices(true);
-      return;
-    }
-  }
-
-  const systemPrompt = `Ты персонаж по имени ${currentName}. Твой характер: ${charData.desc}. Действие происходит в 1922 году в Бюро Магического Регулирования. Ты ведешь диалог с директором (Мистером Морриганом). Директор сказал тебе: "${text}". Напиши ответ от лица своего персонажа. Ответ должен быть коротким (до 15 слов), прямым и реалистичным. ЗАПРЕЩЕНО использовать метафоры, философствовать или писать от третьего лица. Если тебя оскорбили, отвечай грубо или обижайся. Просто напиши текст ответа.`;
-
-  try {
-    const reply = await engine.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: text }
+<script>
+(function(){
+  // ==== ПАРАМЕТРЫ ПЕРСОНАЖЕЙ ====
+  const characters = {
+    "Джеффри": {
+      desc: "Молодой, неуверенный сотрудник Бюро. Пишет диплом.",
+      lines: ["Мистер Морриган, я закончил черновик диплома...", "Мистер Морриган, я хотел уточнить по поводу котёнка Чонди...", "Мистер Морриган, а можно мне лицензию второй категории?"],
+      keywords: ["диплом", "черновик", "учёба", "учиться", "чонди", "котёнок", "кошка", "лицензия", "бюрократия", "бумаги"],
+      responses: [
+        "Мистер Морриган, я почти закончил черновик... осталось только подписать.",
+        "Чонди сегодня опять залез на стол. Я не смог его прогнать...",
+        "Вторая категория? Я думал, мне ещё рано... но если вы разрешаете...",
+        "Бумаги... они смотрят на меня. Это нормально, мистер Морриган?"
       ],
-      max_tokens: 60,
-      temperature: 0.9,
-    });
+      yes: ["Да, мистер Морриган. Наверное...", "Конечно, если вы так считаете."],
+      no: ["Нет, я не думаю...", "Я не уверен, мистер Морриган."],
+      fallback: "Мистер Морриган... я не совсем понял вопрос. Можно ещё раз?"
+    },
+    "Бернадетт": {
+      desc: "Странная сотрудница. Теряет ложки, находит трупы. Обожает паучка Бусинку.",
+      lines: ["Мистер Морриган, у нас опять пропали ложки...", "Мистер Морриган, чайная ложка в столовой... она смотрит...", "Мистер Морриган, Бусинка сплела паутину над сейфом..."],
+      keywords: ["ложка", "пропала", "пропали", "столовая", "паук", "бусинка", "паутина", "труп", "тело", "нашли", "находка"],
+      responses: [
+        "Она снова там. Ложка. Смотрит. Я не сумасшедшая, мистер Морриган.",
+        "Бусинка сплела паутину прямо над сейфом. Я думаю, она что-то охраняет.",
+        "Нашла. Опять. Под лестницей. Я уже перестала удивляться.",
+        "Ложки не просто так исчезают. Они уходят. Я чувствую."
+      ],
+      yes: ["Да... наверное, да.", "О, да. Определённо."],
+      no: ["Нет. Нет-нет. Или да? Нет.", "Я не знаю... но ложка знает."],
+      fallback: "Хм. Слова. Слова. Ложка бы поняла лучше."
+    },
+    "Альфред": {
+      desc: "Старший инспектор. Зануда, строго следует регламенту. Играет в дартс.",
+      lines: ["Мистер Морриган, никто не выехал на адрес мага с 4-й лицензией...", "Мистер Морриган, переодеваемся и идём играть в дартс?", "Мистер Морриган, бумаги не подписаны, это нарушение регламента."],
+      keywords: ["дартс", "дротики", "переодеваемся", "играть", "форма", "регламент", "отчёты", "инспекция", "4-я лицензия", "тёмные практики"],
+      responses: [
+        "Сэр, переодевайтесь. У нас через час дартс по расписанию.",
+        "Регламент есть регламент, мистер Морриган. Никто не выехал на адрес.",
+        "Вы обязаны подписать эти бумаги. Это нарушение, я вас предупреждаю.",
+        "4-я лицензия просрочена. Я подготовил отчёт. Всё по форме."
+      ],
+      yes: ["Так точно, сэр.", "Да, это соответствует регламенту."],
+      no: ["Никак нет, сэр.", "Это нарушает инструкции."],
+      fallback: "Мистер Морриган, я вас не понимаю. Говорите по существу или давайте играть в дартс."
+    },
+    "Эвелин": {
+      desc: "Добрая, наивная сотрудница. Приносит кофе с 30 ложками сахара.",
+      isEvelyn: true,
+      lines: ["Мистер Морриган, я вам кофе. Очень сладкий...", "Мистер Морриган, ваш кофе. Я добавила сахар...", "Мистер Морриган, кофе. У меня слиплись зубы..."],
+      keywords: ["кофе", "сахар", "чашка", "напиток", "сладкий", "слиплись", "угощение", "принеси", "ещё", "еще"],
+      responses: [
+        "Ой, сейчас! Я мигом! С тридцатью ложками сахара, как вы любите!",
+        "Мистер Морриган, я уже несу! Оно очень сладкое, правда.",
+        "Вам добавки? Я могу принести ещё чашечку...",
+        "Кофе? Конечно! У меня уже слиплись зубы, пока я его готовила."
+      ],
+      yes: ["Да, мистер Морриган! Конечно!", "Ой, да, с радостью!"],
+      no: ["Ой... нет, простите...", "Нет, мистер Морриган, я не могу."],
+      fallback: "Ой, простите, я не расслышала... Вам кофе?"
+    },
+    "Ваня": {
+      desc: "Сотрудник с потерей памяти. Сомневается в ориентации.",
+      lines: ["Мистер Морриган, вы не стирали мне память?", "Мистер Морриган, я правда гей?", "Мистер Морриган, что я сделал за 15 долларов в тот раз?"],
+      keywords: ["память", "стерли", "15 долларов", "что я делал", "гей", "забыл", "вспомнить", "тот раз"],
+      responses: [
+        "Мистер Морриган, вы не стирали мне память? Я ничего не помню.",
+        "Я правда гей? Или это тоже побочный эффект?",
+        "Что я сделал за 15 долларов в тот раз? Я не помню...",
+        "Мне кажется, я забыл что-то важное. Это вы стёрли?"
+      ],
+      yes: ["Да... наверное. Или это мне тоже внушили?", "Я... я не уверен. Но пусть будет да."],
+      no: ["Нет. Или да? Я запутался...", "Нет, стоп, я не помню даже вопроса."],
+      fallback: "Подождите... а мы это обсуждали? Я не помню. Вы не стирали мне память?"
+    },
+    "Нетц": {
+      desc: "Заместитель директора. Приглашает Майкла на ужин к себе домой.",
+      lines: ["Мистер Морриган, я хотел пригласить Майкла на ужин...", "Мистер Морриган, как вы думаете, Майкл придёт ко мне на ужин?", "Мистер Морриган, я приготовлю ужин для Майкла."],
+      keywords: ["майкл", "ужин", "пригласить", "домой", "поесть", "готовить", "придёт", "стол"],
+      responses: [
+        "Мистер Морриган, я хотел пригласить Майкла к себе на ужин. Как думаете, он согласится?",
+        "Я уже накрыл стол дома. Всё готово для Майкла.",
+        "Может, вы тоже придёте? Я готовлю ужин, Майкл уже приглашён.",
+        "Майкл сказал, что придёт ко мне домой на ужин. Я очень рад."
+      ],
+      yes: ["Да, я надеюсь, Майкл придёт.", "Да, ужин точно состоится."],
+      no: ["Нет, боюсь, Майкл не придёт...", "Нет, я ещё не пригласил его."],
+      fallback: "Простите, мистер Морриган, я думаю только об ужине с Майклом. Вы что-то сказали?"
+    },
+    "Владимир": {
+      desc: "Нищий посетитель. Постоянно ноет, что 15 долларов за лицензию — грабёж.",
+      isVisitor: true,
+      lines: ["Мистер Морриган... 15 долларов за лицензию — это грабёж...", "Мистер Морриган, мне опять не хватает на лицензию...", "Мистер Морриган, я отдал последнее за вашу лицензию..."],
+      keywords: ["15 долларов", "лицензия", "деньги", "грабёж", "нищий", "последние", "оплата", "дорого"],
+      responses: [
+        "Мистер Морриган, 15 долларов за лицензию — это же грабёж! У меня нет таких денег...",
+        "Я отдал последнее за вашу лицензию... теперь мне не на что жить.",
+        "Может, сделаете скидку? У меня всего 3 доллара и медный грош.",
+        "Это грабёж среди бела дня! Но я всё равно заплачу..."
+      ],
+      yes: ["Да... наверное, да. Если это не дороже 15 долларов.", "Да, но это грабёж..."],
+      no: ["Нет... у меня нет денег.", "Нет, я не могу себе это позволить."],
+      fallback: "Мистер Морриган, у меня нет денег на лишние разговоры. Только на лицензию, и то не хватает."
+    },
+    "Дима": {
+      desc: "Агрессивный посетитель. Грубиян, использует мат.",
+      isDima: true,
+      isVisitor: true,
+      lines: ["Слышь, Морриган. Иди нахуй со своими правилами...", "Ты чё, самый умный? Иди нахуй...", "Морриган, ты заебал. Иди нахуй..."],
+      keywords: ["правила", "бюро", "лицензия", "закон", "оскорбление", "дурак", "тупой", "идиот", "угроза", "выгнать", "уволю"],
+      responses: [
+        "Твои правила, Морриган, знаешь где? Вот именно там.",
+        "Слышь, ты сам-то понял, что сказал? Иди нахуй.",
+        "Попробуй выгони. Я посмотрю, как ты это сделаешь.",
+        "Чё? Говори нормально, бля."
+      ],
+      yes: ["Да пошёл ты.", "Ага, щас."],
+      no: ["Нет, бля. Отвали.", "Не, не так."],
+      fallback: "Чё? Говори нормально, бля."
+    }
+  };
 
-    let aiReply = (reply.choices[0]?.message?.content || '...').trim();
-    aiReply = aiReply.replace(/^["'«]|["'»]$/g, '');
+  const names = Object.keys(characters);
+  
+  const visitorEl = document.getElementById('visitor');
+  const faceTextEl = document.getElementById('face-text');
+  const speakerEl = document.getElementById('speaker');
+  const lineEl = document.getElementById('line');
+  const choicesEl = document.getElementById('choices');
+  const customRow = document.getElementById('custom-row');
+  const customInput = document.getElementById('custom-input');
+  const roomEl = document.getElementById('room');
 
-    const lowerText = text.toLowerCase();
-    if (lowerText.includes('нахуй') || lowerText.includes('долбо')) playSound('angry');
-    else playSound('sad');
+  let currentName = null;
+  let currentLine = "";
+  let currentSpankCount = 0;
+  let busy = false;
+  let lastTwo = [];
 
-    speakerEl.textContent = currentName;
-    lineEl.textContent = '— ' + aiReply;
-
-    busy = false;
-    renderChoices(true);
-
-  } catch (err) {
-    console.error(err);
-    playSound('sad');
-    lineEl.textContent = '— ' + currentName + ' молчит. (Ошибка генерации.)';
-    speakerEl.textContent = currentName;
-    busy = false;
-    renderChoices(true);
+  // ==== ЗВУК ====
+  let audioCtx;
+  function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+  function playSound(type) {
+    try {
+      initAudio(); const now = audioCtx.currentTime;
+      if (type === 'click') { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type='sine'; o.frequency.setValueAtTime(800, now); g.gain.setValueAtTime(0.05, now); g.gain.exponentialRampToValueAtTime(0.001, now+0.05); o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+0.05); }
+      else if (type === 'spank') { const bs = audioCtx.sampleRate*0.1, buf = audioCtx.createBuffer(1, bs, audioCtx.sampleRate), d = buf.getChannelData(0); for(let i=0;i<bs;i++) d[i]=Math.random()*2-1; const n=audioCtx.createBufferSource(); n.buffer=buf; const f=audioCtx.createBiquadFilter(); f.type='lowpass'; f.frequency.setValueAtTime(1000,now); f.frequency.exponentialRampToValueAtTime(100,now+0.1); const g=audioCtx.createGain(); g.gain.setValueAtTime(0.5,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.1); n.connect(f); f.connect(g); g.connect(audioCtx.destination); n.start(now); }
+      else if (type === 'sad') { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type='triangle'; o.frequency.setValueAtTime(300,now); o.frequency.linearRampToValueAtTime(150,now+0.6); g.gain.setValueAtTime(0.1,now); g.gain.linearRampToValueAtTime(0,now+0.6); o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+0.6); }
+      else if (type === 'angry') { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type='sawtooth'; o.frequency.setValueAtTime(400,now); o.frequency.exponentialRampToValueAtTime(800,now+0.2); g.gain.setValueAtTime(0.1,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.2); o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+0.2); }
+    } catch(e){}
   }
-};
 
-function nextVisitor() {
-  hideDummy();
-  setTimeout(spawnDummy, 800);
-}
+  function getRandom(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+  function getFace(name) {
+    const faces = { "Джеффри": [":0",":O",":|"], "Бернадетт": [":P",":3",";P"], "Альфред": [":|",":-|",":Z"], "Эвелин": [":3","^_^","UwU"], "Ваня": [":(",":/",":c"], "Нетц": [":'(","T_T","._."], "Владимир": ["T_T",";-;","ToT"], "Дима": [">:(",">:|","ಠ_ಠ"] };
+    return getRandom(faces[name] || [":0"]);
+  }
+  
+  // ФУНКЦИЯ ДОБАВЛЕНИЯ ЧАШКИ
+  function addCoffeeCup() {
+    if (document.querySelectorAll('.coffee-cup').length > 40) return; // Ограничение, чтобы не сломать браузер
+    const c = document.createElement('div'); 
+    c.className='coffee-cup'; 
+    // Делаем рандомное расположение, чтобы они не накладывались строго друг на друга
+    c.style.left=(5+Math.random()*30)+'%'; 
+    c.style.bottom=(20+Math.random()*10)+'%'; 
+    c.style.transform=`rotate(${Math.random()*20-10}deg)`; 
+    roomEl.appendChild(c);
+  }
 
-setTimeout(spawnDummy, 500);
+  function spawnDummy() {
+    busy = false; currentSpankCount = 0;
+    let avail = names.filter(n => !lastTwo.includes(n)); if (!avail.length) avail = names;
+    currentName = getRandom(avail); lastTwo.push(currentName); if (lastTwo.length > 2) lastTwo.shift();
+    
+    const d = characters[currentName]; 
+    currentLine = getRandom(d.lines);
+    
+    visitorEl.classList.remove('hidden'); faceTextEl.textContent = getFace(currentName);
+    speakerEl.textContent = currentName; lineEl.textContent = '«' + currentLine + '»'; lineEl.scrollTop = 0;
+    if (d.isEvelyn) addCoffeeCup();
+    
+    renderChoices(false);
+  }
+  function hideDummy() { visitorEl.classList.add('hidden'); }
+
+  function renderChoices(inDialogue = false) {
+    choicesEl.innerHTML = ''; customRow.classList.remove('active'); customInput.value = '';
+    const opts = [];
+    if (inDialogue) opts.push({ t: 'Ответить ещё...', a: 'custom' });
+    else opts.push({ t: 'Сказать своё...', a: 'custom' });
+    
+    opts.push({ t: 'Дать под сраку', a: 'spank' });
+    opts.push({ t: 'Выгнать из кабинета', a: 'fire' });
+    
+    if (inDialogue) opts.push({ t: 'Закончить разговор', a: 'leave' });
+    else opts.push({ t: 'Выслушать (молча)', a: 'listen' });
+
+    opts.forEach(o => {
+      const b = document.createElement('button'); b.textContent = o.t; b.onclick = () => handleAction(o.a); choicesEl.appendChild(b);
+    });
+  }
+
+  function handleAction(action) {
+    if (busy || !currentName) return; initAudio();
+    if (action === 'custom') { playSound('click'); customRow.classList.add('active'); customInput.focus(); return; }
+    const d = characters[currentName]; choicesEl.innerHTML = '';
+
+    if (action === 'listen' || action === 'leave') {
+      busy = true; playSound('sad');
+      lineEl.textContent = d.isVisitor ? currentName + ' разворачивается и уходит.' : 'Вы отпускаете сотрудника. Он уходит.';
+      speakerEl.textContent = ''; setTimeout(nextVisitor, 2000);
+    } 
+    else if (action === 'spank') {
+      playSound('spank'); currentSpankCount++; visitorEl.classList.add('spank-anim');
+      
+      if (d.isDima) {
+        busy = false; speakerEl.textContent = 'ДИМА'; 
+        lineEl.textContent = '— Дима: «Слышь, ты чё, долбанулся? Иди нахуй».';
+        setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(true); }, 800);
+      } 
+      else if (currentSpankCount < 3) {
+        busy = false; speakerEl.textContent = currentName;
+        lineEl.textContent = '— ' + currentName + ' ойкает. «Мистер Морриган, что вы делаете? Это же насилие!»';
+        setTimeout(() => { visitorEl.classList.remove('spank-anim'); renderChoices(true); }, 800);
+      } 
+      else {
+        busy = true; speakerEl.textContent = '';
+        lineEl.textContent = 'Вы дали ' + currentName + ' под сраку в третий раз. ' + currentName + ' убегает.';
+        setTimeout(() => { visitorEl.classList.remove('spank-anim'); nextVisitor(); }, 3500);
+      }
+    } 
+    else if (action === 'fire') {
+      if (d.isDima) {
+        playSound('angry'); lineEl.textContent = 'Вы попытались выгнать Диму. В ответ он вам набил ебало. Вы ахуели. Дима ушёл сам.';
+        speakerEl.textContent = ''; busy = true; setTimeout(() => nextVisitor(), 4000); 
+      } else {
+        playSound('click'); busy = true; speakerEl.textContent = '';
+        lineEl.textContent = 'Вы указываете ' + currentName + ' на дверь. Дверь хлопает.';
+        setTimeout(nextVisitor, 3000);
+      }
+    }
+  }
+
+  // ==== ГЕНЕРАТОР ОТВЕТОВ С ЛОГИКОЙ КОФЕ ====
+  window.sendCustom = function() {
+    if (busy || !currentName) return;
+    const text = customInput.value.trim(); if (!text) return;
+    
+    initAudio(); playSound('click'); busy = true; customRow.classList.remove('active'); choicesEl.innerHTML = '';
+    lineEl.innerHTML = '— Вы: «' + text + '»<br><br><span class="typing">Думает</span>'; speakerEl.textContent = '';
+
+    const charData = characters[currentName];
+    const lowerText = text.toLowerCase();
+    
+    setTimeout(() => {
+      let aiReply = "";
+      
+      // Проверяем, есть ли ключевые слова персонажа
+      const hasKeyword = charData.keywords.some(kw => lowerText.includes(kw));
+      
+      if (hasKeyword) {
+        aiReply = getRandom(charData.responses);
+        
+        // СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ ЭВЕЛИН (Добавляем чашку навсегда)
+        if (currentName === "Эвелин" && (lowerText.includes('кофе') || lowerText.includes('чашк') || lowerText.includes('принеси') || lowerText.includes('ещё') || lowerText.includes('еще'))) {
+          addCoffeeCup(); // Добавляет чашку в DOM, она не исчезнет при смене посетителя
+        }
+      } else {
+        const isQuestion = lowerText.includes('?') || lowerText.includes('можно') || lowerText.includes('правда') || lowerText.includes('ты') || lowerText.includes('вы');
+        
+        if (isQuestion) {
+          aiReply = Math.random() > 0.5 ? getRandom(charData.yes) : getRandom(charData.no);
+        } else {
+          aiReply = charData.fallback;
+        }
+      }
+
+      if (lowerText.includes('нахуй') || lowerText.includes('долбо') || lowerText.includes('дурак')) playSound('angry');
+      else playSound('sad');
+      
+      speakerEl.textContent = currentName;
+      lineEl.textContent = '— ' + aiReply;
+      
+      busy = false;
+      renderChoices(true); 
+    }, 600);
+  };
+
+  function nextVisitor() { 
+    hideDummy(); 
+    setTimeout(spawnDummy, 800); 
+  }
+  
+  setTimeout(spawnDummy, 500);
+})();
 </script>
 </body>
 </html>
