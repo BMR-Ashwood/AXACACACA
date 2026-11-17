@@ -38,14 +38,14 @@
     min-height: 200px;
   }
 
-  /* Стол (перекрывает манекен) */
+  /* Стол */
   #desk-bg {
     position: absolute;
     bottom: 0; left: 0; right: 0;
     height: 30%;
     background-color: #c9a87c;
     border-top: 4px solid #b8936a;
-    z-index: 5; /* Выше манекена */
+    z-index: 5;
   }
 
   .paper {
@@ -58,14 +58,51 @@
   .p1 { width: 50px; height: 70px; left: 10%; bottom: 5%; transform: rotate(-5deg); }
   .p2 { width: 60px; height: 40px; right: 10%; bottom: 10%; transform: rotate(8deg); }
 
+  /* ЧАШКИ КОФЕ */
+  .coffee-cup {
+    position: absolute;
+    bottom: 25%; /* На столе */
+    width: 26px;
+    height: 32px;
+    background-color: #fff;
+    border: 2px solid #ddd;
+    border-radius: 0 0 10px 10px;
+    box-shadow: inset -5px 0 5px rgba(0,0,0,0.1), 2px 2px 4px rgba(0,0,0,0.2);
+    z-index: 7;
+    animation: dropIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .coffee-cup::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px;
+    height: 8px;
+    background-color: #6b4c3a; /* Кофе внутри */
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    border-top: none;
+  }
+  .coffee-cup::after {
+    content: '';
+    position: absolute;
+    top: 8px; right: -12px;
+    width: 10px; height: 14px;
+    border: 2px solid #ddd;
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+  }
+  @keyframes dropIn {
+    0% { transform: translateY(-20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
   /* МАНЕКЕН */
   #visitor {
     position: relative;
-    z-index: 2; /* Под столом */
+    z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 20%; /* Высота над столом */
+    margin-bottom: 20%;
     transition: all 0.3s ease;
   }
   
@@ -87,7 +124,6 @@
     align-items: center;
   }
 
-  /* Лица */
   .face {
     font-family: monospace;
     font-size: 26px;
@@ -104,7 +140,6 @@
     box-shadow: inset -5px -5px 15px rgba(0,0,0,0.1);
   }
 
-  /* Анимации */
   .spank-anim {
     animation: shake 0.4s;
   }
@@ -134,6 +169,7 @@
     text-transform: uppercase;
     margin-bottom: 5px;
     letter-spacing: 1px;
+    min-height: 18px;
   }
 
   #line {
@@ -219,7 +255,6 @@
 
 <script>
 (function(){
-  // БАЗА ПЕРСОНАЖЕЙ (1920 год, магические лицензии)
   const characters = {
     "Джеффри": {
       lines: [
@@ -244,6 +279,7 @@
       ]
     },
     "Эвелин": {
+      isEvelyn: true,
       lines: [
         "Мистер Морриган, я вам кофе. Очень сладкий. Тридцать ложек сахара. Я не считала, но мне кажется, тридцать. Может, тридцать одна. Оно почти не шевелится.",
         "Мистер Морриган, ваш кофе. Я добавила сахар. Много. Очень много. Оно теперь не совсем напиток. Скорее, десерт. Или сироп. Или... сахар с кофе.",
@@ -290,11 +326,11 @@
   const choicesEl = document.getElementById('choices');
   const customRow = document.getElementById('custom-row');
   const customInput = document.getElementById('custom-input');
+  const roomEl = document.getElementById('room');
 
   let currentName = null;
   let busy = false;
 
-  // ЗВУКОВОЙ ДВИЖОК
   let audioCtx;
   function initAudio() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -317,29 +353,23 @@
         osc.start(now); osc.stop(now + 0.05);
       } 
       else if (type === 'spank') {
-        // Резкий звонкий шлепок (шум)
         const bufferSize = audioCtx.sampleRate * 0.1;
         const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-        
         const noise = audioCtx.createBufferSource();
         noise.buffer = buffer;
-        
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(1000, now);
         filter.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-        
         const gain = audioCtx.createGain();
         gain.gain.setValueAtTime(0.5, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-        
         noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
         noise.start(now);
       } 
       else if (type === 'sad') {
-        // Грустный нисходящий звук
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'triangle';
@@ -351,7 +381,6 @@
         osc.start(now); osc.stop(now + 0.6);
       }
       else if (type === 'angry') {
-        // Визг/агрессия
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sawtooth';
@@ -383,9 +412,29 @@
     return getRandom(faces[name] || [":0"]);
   }
 
+  // Добавление чашки кофе на стол
+  function addCoffeeCup() {
+    // Ограничим количество чашек, чтобы не засорять экран (например, до 15)
+    const currentCups = document.querySelectorAll('.coffee-cup').length;
+    if (currentCups > 15) return;
+
+    const cup = document.createElement('div');
+    cup.className = 'coffee-cup';
+    
+    // Случайная позиция слева от манекена
+    const leftPos = 5 + Math.random() * 25; // от 5% до 30%
+    cup.style.left = leftPos + '%';
+    
+    // Небольшое случайное смещение вверх/вниз и поворот для естественности
+    const bottomOffset = Math.random() * 10;
+    cup.style.bottom = (20 + bottomOffset) + '%';
+    cup.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
+
+    roomEl.appendChild(cup);
+  }
+
   function spawnDummy() {
     busy = false;
-    // Абсолютно рандомное появление
     currentName = getRandom(names);
     const charData = characters[currentName];
     const dialogue = getRandom(charData.lines);
@@ -396,6 +445,11 @@
     speakerEl.textContent = currentName;
     lineEl.textContent = '«' + dialogue + '»';
     lineEl.scrollTop = 0;
+
+    // Если пришла Эвелин - ставим чашку
+    if (charData.isEvelyn) {
+      addCoffeeCup();
+    }
     
     renderChoices();
   }
@@ -426,7 +480,7 @@
 
   function handleAction(action) {
     if (busy || !currentName) return;
-    initAudio(); // Активация звука при первом клике
+    initAudio();
 
     if (action === 'custom') {
       playSound('click');
@@ -438,51 +492,54 @@
     const charData = characters[currentName];
     choicesEl.innerHTML = '';
     
-    // --- ВЫСЛУШАТЬ ---
+    // ВЫСЛУШАТЬ
     if (action === 'listen') {
       busy = true;
       playSound('sad');
       lineEl.textContent = 'Вы молча киваете. Сотрудник уходит, так и не поняв, что вы его не слушали.';
-      speakerEl.textContent = ''; // Убрал Майкла
-      setTimeout(nextVisitor, 1500);
+      speakerEl.textContent = '';
+      // Увеличена задержка перед следующим (3 секунды)
+      setTimeout(nextVisitor, 3000); 
     } 
     
-    // --- ШЛЕПОК ---
+    // ШЛЕПОК
     else if (action === 'spank') {
       playSound('spank');
       visitorEl.classList.add('spank-anim');
       
       if (charData.isDima) {
-        // Дима НЕ уходит
         busy = false; 
         speakerEl.textContent = 'ДИМА';
         lineEl.textContent = '— Дима посмотрел на вас. Он не ушёл. Он сказал: «Слышь, ты чё, долбанулся? Иди нахуй».';
         setTimeout(() => {
           visitorEl.classList.remove('spank-anim');
-          renderChoices(); // Возвращаем кнопки
-        }, 600);
+          renderChoices(); 
+        }, 800);
       } else {
         busy = true;
         speakerEl.textContent = '';
         lineEl.textContent = 'Вы дали ' + currentName + ' под сраку. ' + currentName + ' с визгом убегает.';
-        setTimeout(() => { visitorEl.classList.remove('spank-anim'); nextVisitor(); }, 800);
+        // Увеличена задержка (3.5 секунды)
+        setTimeout(() => { visitorEl.classList.remove('spank-anim'); nextVisitor(); }, 3500);
       }
     } 
     
-    // --- ВЫГНАТЬ ---
+    // ВЫГНАТЬ
     else if (action === 'fire') {
       if (charData.isDima) {
         playSound('angry');
         lineEl.textContent = 'Вы попытались выгнать Диму. В ответ он вам набил ебало. Вы ахуели. Дима ушёл сам.';
         speakerEl.textContent = '';
         busy = true;
-        setTimeout(() => nextVisitor(), 2500); // Долгая пауза после избиения
+        // Дима уходит долго (4 секунды)
+        setTimeout(() => nextVisitor(), 4000); 
       } else {
         playSound('click');
         busy = true;
         speakerEl.textContent = '';
         lineEl.textContent = 'Вы указываете ' + currentName + ' на дверь. Дверь хлопает.';
-        setTimeout(nextVisitor, 1000);
+        // Увеличена задержка (3 секунды)
+        setTimeout(nextVisitor, 3000);
       }
     }
   }
@@ -499,12 +556,14 @@
     choicesEl.innerHTML = '';
     
     lineEl.textContent = '— Вы: «' + text + '»';
-    speakerEl.textContent = ''; // Убрал Майкла
+    speakerEl.textContent = '';
     
     setTimeout(() => {
       if (characters[currentName].isDima) {
         playSound('angry');
         lineEl.textContent = '— Дима: «Иди нахуй, я сказал».';
+        // 4 секунды
+        setTimeout(nextVisitor, 4000);
       } else {
         playSound('sad');
         const reactions = [
@@ -514,19 +573,19 @@
           currentName + ' говорит: «Ясно».'
         ];
         lineEl.textContent = '— ' + getRandom(reactions);
+        // 3 секунды
+        setTimeout(nextVisitor, 3000);
       }
-      setTimeout(nextVisitor, 2000);
-    }, 1000);
+    }, 1500); // Пауза после вашей реплики (1.5 сек)
   };
 
   function nextVisitor() {
     hideDummy();
     setTimeout(() => {
       spawnDummy();
-    }, 500);
+    }, 800); // Пауза между исчезновением и появлением нового
   }
 
-  // Инициализация
   setTimeout(spawnDummy, 500);
 
 })();
